@@ -1,0 +1,10 @@
+- [x] STEP 0 — DISCIPLINE CHECK
+- [x] STEP 1 — ITEM IDENTITY (Floating labels, emojis, weight dots, pulse)
+- [x] FEATURE — LOCKED DOOR & KEY (Door blocks study, key in kitchen/bed)
+- [x] BUGFIX — ESCAPE EXIT (Cleared wall block so player can reach exit)
+- [x] BUGFIX — GUARD PATHING (Adjusted waypoints to stay inside rooms)
+- [x] STEP 3A — ROOM THEMING (Added distinct floor colors per room)
+- [x] STEP 2 — PICKUP FEEDBACK (+VALUE popup, item disappear animation, screen flash, HUD weight animation)
+- [x] STEP 4 — WIN/LOSE SCREENS (Scoring breakdown, Less-is-more bonus, Lose screen layout, shake)
+- [x] STEP 5 — AUDIO (Pickup, footstep, guard alert, caught, win, ambient, AudioManager singleton)
+- [ ] STEP 6 — FINAL VERIFICATION & BUILD
