@@ -1,16 +1,24 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Central singleton for Egel op Expeditie.
+/// Holds the garden start state chosen by the player in Phase 1.
+/// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    public enum GameState { Playing, Paused, Win, Lose }
-    public GameState State { get; private set; } = GameState.Playing;
+    /// <summary>0 = hard (80% paved), 1 = medium (50/30/20), 2 = easy (20/50/30)</summary>
+    public int GardenStartState { get; set; } = 1;
+
+    /// <summary>Whether the hedgehog successfully found shelter.</summary>
+    public bool HedgehogSafe { get; set; } = false;
+
+    /// <summary>Total score accumulated across all phases.</summary>
+    public float TotalScore { get; set; } = 0f;
 
     private void Awake()
     {
-        // Singleton guard
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -19,52 +27,11 @@ public class GameManager : MonoBehaviour
         Instance = this;
     }
 
-    private void Update()
+    /// <summary>Reset all runtime state for a new playthrough.</summary>
+    public void ResetGame()
     {
-        if (Input.GetKeyDown(KeyCode.Escape) && State == GameState.Playing)
-            TogglePause();
-
-        if (Input.GetKeyDown(KeyCode.R) && (State == GameState.Win || State == GameState.Lose))
-            Restart();
-    }
-
-    public void TogglePause()
-    {
-        if (State == GameState.Paused)
-        {
-            State = GameState.Playing;
-            Time.timeScale = 1f;
-        }
-        else
-        {
-            State = GameState.Paused;
-            Time.timeScale = 0f;
-        }
-        UIManager.Instance?.RefreshPauseState(State == GameState.Paused);
-    }
-
-    public void TriggerWin()
-    {
-        if (State != GameState.Playing) return;
-        State = GameState.Win;
-        Time.timeScale = 0f;
-        AudioManager.Instance?.PlayPickup();
-        UIManager.Instance?.ShowWin(ScoreManager.Instance?.TotalScore ?? 0);
-    }
-
-    public void TriggerLose()
-    {
-        if (State != GameState.Playing) return;
-        State = GameState.Lose;
-        Time.timeScale = 0f;
-        AudioManager.Instance?.PlayAlarm();
-        UIManager.Instance?.ShowLose();
-        Camera.main?.GetComponent<CameraFollow>()?.Shake(0.5f, 0.5f);
-    }
-
-    public void Restart()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        GardenStartState = 1;
+        HedgehogSafe = false;
+        TotalScore = 0f;
     }
 }

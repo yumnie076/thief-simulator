@@ -1,130 +1,82 @@
 using UnityEngine;
-using TMPro;
 
+/// <summary>
+/// Coordinates all UI panels for the 4-phase game loop.
+/// Each phase has its own UI panel that this manager shows/hides.
+/// </summary>
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    [Header("HUD")]
-    public GameObject hudPanel;
-    public TMP_Text scoreText;
-    public TMP_Text weightText;
-    public TMP_Text itemsText;
-    public UnityEngine.UI.Image flashImage;
-    public GameObject sneakTooltip;        // "Hold SHIFT to sneak"
+    [Header("Phase Panels")]
+    [SerializeField] private GameObject introPanel;
+    [SerializeField] private GameObject buildPanel;
+    [SerializeField] private GameObject hedgehogPanel;
+    [SerializeField] private GameObject resultPanel;
+    [SerializeField] private GameObject fadePanel;
 
-    [Header("Win Panel")]
-    public GameObject winPanel;
-    public TMP_Text winScoreText;
-
-    [Header("Lose Panel")]
-    public GameObject losePanel;
-
-    [Header("Pause Panel")]
-    public GameObject pausePanel;
-
-    private float _tooltipTimer = 10f;
+    [Header("References")]
+    [SerializeField] private CanvasGroup fadeCanvasGroup;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
     }
 
     private void Start()
     {
-        winPanel?.SetActive(false);
-        losePanel?.SetActive(false);
-        pausePanel?.SetActive(false);
-        sneakTooltip?.SetActive(true);
-        RefreshHUD(0, 0, 0);
-    }
-
-    private void Update()
-    {
-        if (_tooltipTimer > 0)
+        if (PhaseController.Instance != null)
         {
-            _tooltipTimer -= Time.unscaledDeltaTime;
-            if (_tooltipTimer <= 0) sneakTooltip?.SetActive(false);
+            PhaseController.Instance.OnPhaseChanged += OnPhaseChanged;
+            // Initialize first state
+            OnPhaseChanged(PhaseController.Instance.CurrentPhase);
         }
     }
 
-    public void RefreshHUD(int score, int weight, int items)
+    private void OnDestroy()
     {
-        if (scoreText)  scoreText.text  = $"Score: {score}";
-        if (weightText)
+        if (PhaseController.Instance != null)
         {
-            string newText = $"Weight: {weight}";
-            if (weightText.text != newText)
-            {
-                weightText.text = newText;
-                if (gameObject.activeInHierarchy) StartCoroutine(PunchScale(weightText.transform));
-            }
-            // 2D warning territory
-            weightText.color = (weight >= 8) ? Color.red : Color.white;
-        }
-        if (itemsText)  itemsText.text  = $"Items: {items}";
-    }
-
-    public void FlashPickup()
-    {
-        if (flashImage == null) return;
-        StartCoroutine(FlashRoutine());
-    }
-
-    private System.Collections.IEnumerator FlashRoutine()
-    {
-        float t = 0;
-        float duration = 0.2f;
-        while (t < duration)
-        {
-            t += Time.unscaledDeltaTime;
-            float alpha = Mathf.Sin((t / duration) * Mathf.PI) * 0.15f;
-            flashImage.color = new Color(1, 1, 1, alpha);
-            yield return null;
-        }
-        flashImage.color = new Color(1, 1, 1, 0);
-    }
-
-    private System.Collections.IEnumerator PunchScale(Transform t)
-    {
-        Vector3 orig = Vector3.one;
-        t.localScale = orig * 1.5f;
-        float time = 0;
-        while (time < 0.3f)
-        {
-            time += Time.unscaledDeltaTime;
-            t.localScale = Vector3.Lerp(orig * 1.5f, orig, time / 0.3f);
-            yield return null;
-        }
-        t.localScale = orig;
-    }
-
-    public void ShowWin(int finalScore)
-    {
-        winPanel?.SetActive(true);
-        int stolen = ScoreManager.Instance != null ? ScoreManager.Instance.ItemCount : 0;
-        int left = ScoreManager.Instance != null ? (ScoreManager.Instance.TotalItemsInLevel - stolen) : 0;
-        int bonus = left * 10;
-        int total = finalScore + bonus;
-
-        if (winScoreText) 
-        {
-            winScoreText.text = $"Items stolen: {stolen}\n" +
-                                $"Total value: {finalScore}\n" +
-                                $"Items LEFT BEHIND: {left}\n\n" +
-                                $"\"Less is more\" bonus: +{bonus}\n\n" +
-                                $"FINAL SCORE: {total}";
+            PhaseController.Instance.OnPhaseChanged -= OnPhaseChanged;
         }
     }
 
-    public void ShowLose()
+    private void OnPhaseChanged(PhaseController.GamePhase phase)
     {
-        losePanel?.SetActive(true);
+        HideAll();
+        switch (phase)
+        {
+            case PhaseController.GamePhase.Intro:
+                if (introPanel != null) introPanel.SetActive(true);
+                break;
+            case PhaseController.GamePhase.GardenBuild:
+                if (buildPanel != null) buildPanel.SetActive(true);
+                break;
+            case PhaseController.GamePhase.HedgehogVisit:
+                if (hedgehogPanel != null) hedgehogPanel.SetActive(true);
+                break;
+            case PhaseController.GamePhase.Result:
+                if (resultPanel != null) resultPanel.SetActive(true);
+                break;
+        }
     }
 
-    public void RefreshPauseState(bool isPaused)
+    public void HideAll()
     {
-        pausePanel?.SetActive(isPaused);
+        if (introPanel != null) introPanel.SetActive(false);
+        if (buildPanel != null) buildPanel.SetActive(false);
+        if (hedgehogPanel != null) hedgehogPanel.SetActive(false);
+        if (resultPanel != null) resultPanel.SetActive(false);
+    }
+
+    /// <summary>Get the fade CanvasGroup for transitions.</summary>
+    public CanvasGroup GetFadeGroup()
+    {
+        return fadeCanvasGroup;
     }
 }
