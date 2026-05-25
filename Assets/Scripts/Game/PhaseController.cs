@@ -89,6 +89,8 @@ public class PhaseController : MonoBehaviour
 
             case GamePhase.GardenBuild:
                 InitializeGarden();
+                if (ScoreManager.Instance != null)
+                    ScoreManager.Instance.ResetScores();
                 break;
 
             case GamePhase.HedgehogVisit:
@@ -105,21 +107,32 @@ public class PhaseController : MonoBehaviour
     {
         // GardenManager subscribes to OnPhaseChanged and builds the grid itself.
         Debug.Log($"[PhaseController] Garden phase starting. Start state: {GameManager.Instance?.GardenStartState}");
+
+        // Cleanup NightOverlay if it exists from a previous run
+        var night = GameObject.Find("NightOverlay");
+        if (night != null) UnityEngine.Object.Destroy(night);
     }
 
     private void SpawnHedgehog()
     {
-        // Destroy previous hedgehog if any
+        // Destroy gardener player if any
+        var player = GameObject.Find("Player");
+        if (player != null) UnityEngine.Object.Destroy(player);
+
+        // Destroy previous hedgehog/fox if any
         var existing = UnityEngine.Object.FindAnyObjectByType<HedgehogAI>();
         if (existing != null) UnityEngine.Object.Destroy(existing.gameObject);
+        
+        var existingFox = UnityEngine.Object.FindAnyObjectByType<FoxAI>();
+        if (existingFox != null) UnityEngine.Object.Destroy(existingFox.gameObject);
 
         // Create hedgehog GameObject
         var hedgehogGO = new GameObject("Hedgehog");
         var sr = hedgehogGO.AddComponent<SpriteRenderer>();
         sr.sortingOrder = 50; // Ensure visible
 
-        // Try to load the procedural hedgehog sprite
-        var hedgehogSprite = Resources.Load<Sprite>("EgelGame/hedgehog_right");
+        // Try to load the beautifully generated procedural hedgehog sprite
+        var hedgehogSprite = Resources.Load<Sprite>("EgelGame/hedgehog");
         if (hedgehogSprite == null)
         {
             // Fallback: create a small brown circle
@@ -149,7 +162,78 @@ public class PhaseController : MonoBehaviour
                 2f, 0f);
         }
 
-        Debug.Log("[PhaseController] Hedgehog spawned.");
+        // Set camera target to track the hedgehog!
+        var cam = Camera.main;
+        if (cam != null)
+        {
+            var cf = cam.GetComponent<CameraFollow>();
+            if (cf != null) cf.target = hedgehogGO.transform;
+        }
+
+        // Spawn Fox Predator at top-left edge
+        SpawnFox();
+
+        // Spawn snacks around the garden
+        if (GardenManager.Instance != null)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                var snack = new GameObject("Snack");
+                float rx = UnityEngine.Random.Range(2f, GardenManager.Instance.GardenWidth - 2f);
+                float ry = UnityEngine.Random.Range(2f, GardenManager.Instance.GardenHeight - 2f);
+                snack.transform.position = new Vector3(rx, ry, 0f);
+                snack.AddComponent<Collectible>();
+            }
+        }
+
+        // Night Overlay — subtle blue dusk, not too dark
+        var nightGO = new GameObject("NightOverlay");
+        var nightSR = nightGO.AddComponent<SpriteRenderer>();
+        var nightTex = new Texture2D(1, 1);
+        nightTex.SetPixel(0, 0, new Color(0.05f, 0.05f, 0.2f, 0.35f)); // Subtle dusk tint
+        nightTex.Apply();
+        nightSR.sprite = Sprite.Create(nightTex, new Rect(0,0,1,1), new Vector2(0.5f,0.5f), 1f);
+        float mapW = GardenManager.Instance != null ? GardenManager.Instance.GardenWidth : 20f;
+        float mapH = GardenManager.Instance != null ? GardenManager.Instance.GardenHeight : 20f;
+        nightGO.transform.localScale = new Vector3(mapW + 10f, mapH + 10f, 1f);
+        nightGO.transform.position = new Vector3(mapW / 2f, mapH / 2f, 0f);
+        nightSR.sortingOrder = 5; // Just above background (-1000), below everything else
+
+        Debug.Log("[PhaseController] Hedgehog spawned, night has fallen.");
+    }
+
+    private void SpawnFox()
+    {
+        var foxGO = new GameObject("Fox");
+        if (GardenManager.Instance != null)
+        {
+            foxGO.transform.position = new Vector3(2f, GardenManager.Instance.GardenHeight - 2f, 0f);
+        }
+        else
+        {
+            foxGO.transform.position = new Vector3(2f, 10f, 0f);
+        }
+
+        var sr = foxGO.AddComponent<SpriteRenderer>();
+        sr.sortingOrder = 51;
+
+        var foxSprite = Resources.Load<Sprite>("EgelGame/fox");
+        if (foxSprite != null)
+        {
+            sr.sprite = foxSprite;
+        }
+        else
+        {
+            // Fallback: simple orange box
+            var tex = new Texture2D(16, 16);
+            for (int y = 0; y < 16; y++)
+                for (int x = 0; x < 16; x++)
+                    tex.SetPixel(x, y, new Color(0.9f, 0.43f, 0.15f));
+            tex.Apply();
+            sr.sprite = Sprite.Create(tex, new Rect(0,0,16,16), new Vector2(0.5f,0.5f), 16f);
+        }
+
+        foxGO.AddComponent<FoxAI>();
     }
 
     private void CalculateFinalScore()

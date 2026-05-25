@@ -22,7 +22,7 @@ public class HedgehogPhaseUI : MonoBehaviour
     [SerializeField] private Image safetyIcon;
 
     [Header("Settings")]
-    [SerializeField] private float totalTime = 45f;
+    [SerializeField] private float totalTime = 60f;
 
     // ── Colours for hunger gradient ─────────────────────────────
     private static readonly Color HungerFull  = new Color32(90, 184, 74, 255);  // green #5ab84a
@@ -36,7 +36,7 @@ public class HedgehogPhaseUI : MonoBehaviour
     private void Start()
     {
         if (headerText != null)
-            headerText.text = "🦔 De egel zoekt voedsel en schuilplek...";
+            headerText.text = "De egel zoekt voedsel en schuilplek...";
 
         if (PhaseController.Instance != null)
         {
@@ -100,7 +100,7 @@ public class HedgehogPhaseUI : MonoBehaviour
     public void SetSafety(bool isSafe)
     {
         if (safetyText != null)
-            safetyText.text = isSafe ? "🛡️ Veilig" : "⚠️ Onveilig";
+            safetyText.text = isSafe ? "Veilig" : "Onveilig";
 
         if (safetyIcon != null)
             safetyIcon.color = isSafe ? HungerFull : HungerEmpty;

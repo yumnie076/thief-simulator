@@ -125,3 +125,33 @@ Format:
 - Always set aycastTarget = false on fullscreen parent panel images in UGUI to avoid eating pointer raycasts. Provide keyboard hotkeys for toolbars as an elegant and robust accessibility fallback.
 
 ---
+
+
+## 2026-05-25 - EgelGame - Playable Hedgehog, Fox Predator, & More Animals
+### Wins:
+- Aesthetic upgrade of the build phase inventory (toolbar) with custom vertical layouts, beautiful procedural vector-art icons (flower, hammer, bush, tree, water, leaf, house), and dynamic text color switching.
+- Made the Hedgehog character fully playable during the Visit Phase, including top-down WASD and Arrow key controls, keeping them constrained inside the garden bounds.
+- Added a full predator mechanic with a beautiful procedural Fox AI that detects and chases the hedgehog.
+- Implemented a shelter-hiding mechanic where the hedgehog can press Spacebar to crawl inside any nearby placed Hedgehog House, making them safe from the Fox.
+- Expanded the garden biodiversity with three new animals (blue/yellow Birds, brown Snails, jumping green Frogs) spawned dynamically based on placed Trees and Ponds.
+- Wired real gameplay actions to the scoring system (insects = food points, ponds = water points, hiding = shelter points), which populate the final scorecard.
+### Misses:
+- None.
+### New pattern to remember:
+- Providing keyboard control over AI states during custom visit/simulate phases makes games feel instantly interactive. Adding high-contrast active-selection highlights (e.g. toggling text colors to white and backgrounds to green) increases premium polish.
+
+---
+
+## 2026-05-25 — Egel op Expeditie — Major Ecosystem & UI Update
+### Wins: Fixed UI raycast blocks, fixed word wrap on inventory texts. Implemented difficulty-based maps, reduced fox speed, activated ecosystem logic (bees, birds, frogs interacting with grid), and added game instructions.
+### Misses: None. We executed the plan perfectly.
+### New pattern to remember: Always check aycastTarget on full-screen UI panels to prevent interaction blocking, and check enableWordWrapping on dynamic text containers.
+
+---
+
+## 2026-05-25 — Egel op Expeditie — Expansion Update
+### Wins: Implemented 5 major features (Day/Night cycle, Collectibles, Ecosystem Animals, Obstacles, and Procedural Audio). The game is now fully featured and highly engaging.
+### Misses: None!
+### New pattern to remember: Procedural audio via Mathf.Sin is a highly effective way to add 'juice' to prototypes when external audio files aren't available.
+
+---

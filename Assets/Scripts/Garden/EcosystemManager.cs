@@ -39,7 +39,7 @@ public class EcosystemManager : MonoBehaviour
 
     private void HandleObjectPlaced(GardenObject obj)
     {
-        // 50% chance to spawn an insect per object
+        // 50% chance to spawn an animal per object
         if (Random.value > 0.5f) return;
 
         if (obj.Type == GardenObject.ObjectType.Flower)
@@ -53,6 +53,16 @@ public class EcosystemManager : MonoBehaviour
         else if (obj.Type == GardenObject.ObjectType.LeafPile)
         {
             SpawnInsect(Insect.InsectType.Spider, obj.transform.position);
+        }
+        else if (obj.Type == GardenObject.ObjectType.Pond)
+        {
+            // Spawn Snail or Frog (50% chance each)
+            var type = Random.value > 0.5f ? Insect.InsectType.Snail : Insect.InsectType.Frog;
+            SpawnInsect(type, obj.transform.position);
+        }
+        else if (obj.Type == GardenObject.ObjectType.Tree)
+        {
+            SpawnInsect(Insect.InsectType.Bird, obj.transform.position);
         }
     }
 

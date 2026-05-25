@@ -57,11 +57,15 @@ public class EducationPopup : MonoBehaviour
             return;
         }
 
-        // Cancel previous popup if still running
+        ShowMessage(fact);
+    }
+
+    public void ShowMessage(string message)
+    {
         if (activeRoutine != null)
             StopCoroutine(activeRoutine);
 
-        activeRoutine = StartCoroutine(ShowRoutine(fact));
+        activeRoutine = StartCoroutine(ShowRoutine(message));
     }
 
     // ── Coroutine ───────────────────────────────────────────────

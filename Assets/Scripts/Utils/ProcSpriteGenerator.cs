@@ -61,6 +61,10 @@ public static class ProcSpriteGenerator
         GenerateButterflySprite();
         GenerateBugSprite();
         GenerateSpiderSprite();
+        GenerateFoxSprite();
+        GenerateBirdSprite();
+        GenerateSnailSprite();
+        GenerateFrogSprite();
 
         // Tool icons
         GenerateToolIcons();
@@ -534,6 +538,111 @@ public static class ProcSpriteGenerator
     {
         ColorUtility.TryParseHtmlString(hex, out Color c);
         return c;
+    }
+
+    private static void GenerateFoxSprite()
+    {
+        var tex = new Texture2D(TileSize, TileSize);
+        Color clear = new Color(0, 0, 0, 0);
+        FillRect(tex, 0, 0, TileSize, TileSize, clear);
+
+        Color foxOrange = HexColor("#e66e25"); // Fox orange
+        Color foxWhite = Color.white;
+        Color foxDark = HexColor("#2b1b11");
+
+        // Tail
+        DrawFilledEllipse(tex, 16, 20, 10, 14, foxOrange);
+        DrawFilledCircle(tex, 12, 10, 5, foxWhite); // tail white tip
+
+        // Body
+        DrawFilledEllipse(tex, 32, 24, 18, 12, foxOrange);
+        // Chest (white belly)
+        DrawFilledEllipse(tex, 34, 22, 10, 8, foxWhite);
+
+        // Legs (dark paws)
+        FillRect(tex, 20, 4, 4, 10, foxDark);
+        FillRect(tex, 28, 4, 4, 10, foxDark);
+        FillRect(tex, 36, 4, 4, 10, foxDark);
+        FillRect(tex, 44, 4, 4, 10, foxDark);
+
+        // Head
+        DrawFilledCircle(tex, 38, 36, 10, foxOrange);
+        // Snout
+        DrawFilledEllipse(tex, 44, 34, 6, 4, foxOrange);
+        FillRect(tex, 49, 33, 2, 2, foxDark); // black nose tip
+
+        // Ears (pointed)
+        for (int y = 0; y < 6; y++)
+            FillRect(tex, 32 + y/2, 40 + y, 4 - y/2, 1, foxOrange);
+        for (int y = 0; y < 6; y++)
+            FillRect(tex, 40 + y/2, 40 + y, 4 - y/2, 1, foxOrange);
+
+        // Eye
+        FillRect(tex, 41, 37, 2, 2, foxDark);
+
+        SaveSprite(tex, "fox");
+    }
+
+    private static void GenerateBirdSprite()
+    {
+        var tex = new Texture2D(32, 32);
+        FillRect(tex, 0, 0, 32, 32, new Color(0,0,0,0));
+        Color blueBird = HexColor("#3d9be6");
+        Color bellyYellow = HexColor("#e6cf45");
+
+        // Body
+        DrawFilledEllipse(tex, 16, 16, 10, 7, blueBird);
+        // Yellow belly
+        DrawFilledEllipse(tex, 16, 13, 7, 4, bellyYellow);
+        // Head
+        DrawFilledCircle(tex, 22, 20, 5, blueBird);
+        // Beak (yellow/orange)
+        FillRect(tex, 26, 19, 3, 2, HexColor("#e69b25"));
+        // Wing
+        DrawFilledEllipse(tex, 12, 17, 5, 3, HexColor("#227cb5"));
+        // Tail
+        FillRect(tex, 4, 15, 4, 3, blueBird);
+
+        SaveSprite(tex, "insect_bird");
+    }
+
+    private static void GenerateSnailSprite()
+    {
+        var tex = new Texture2D(24, 24);
+        FillRect(tex, 0, 0, 24, 24, new Color(0,0,0,0));
+        Color snailBody = HexColor("#e0c7a6");
+        Color snailShell = HexColor("#b88554");
+
+        // Body
+        DrawFilledEllipse(tex, 12, 6, 10, 3, snailBody);
+        // Neck/Head
+        FillRect(tex, 18, 8, 3, 6, snailBody);
+        // Shell
+        DrawFilledCircle(tex, 10, 12, 6, snailShell);
+        DrawFilledCircle(tex, 10, 12, 3, HexColor("#8c5e32")); // inner spiral
+
+        SaveSprite(tex, "insect_snail");
+    }
+
+    private static void GenerateFrogSprite()
+    {
+        var tex = new Texture2D(24, 24);
+        FillRect(tex, 0, 0, 24, 24, new Color(0,0,0,0));
+        Color frogGreen = HexColor("#4bb55c");
+        Color frogLight = HexColor("#77d487");
+
+        // Body
+        DrawFilledEllipse(tex, 12, 10, 9, 6, frogGreen);
+        // Head / Eyes
+        DrawFilledCircle(tex, 8, 15, 3, frogGreen);
+        DrawFilledCircle(tex, 16, 15, 3, frogGreen);
+        // White eyes
+        FillRect(tex, 8, 15, 1, 1, Color.black);
+        FillRect(tex, 16, 15, 1, 1, Color.black);
+        // Belly
+        DrawFilledEllipse(tex, 12, 8, 5, 3, frogLight);
+
+        SaveSprite(tex, "insect_frog");
     }
 }
 #endif

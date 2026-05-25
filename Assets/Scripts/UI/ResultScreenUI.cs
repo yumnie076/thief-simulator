@@ -66,11 +66,11 @@ public class ResultScreenUI : MonoBehaviour
         if (titleText != null)
         {
             if (total >= ThresholdGreat)
-                titleText.text = "🎉 Jouw tuin is een egel-paradijs!";
+                titleText.text = "Jouw tuin is een egel-paradijs!";
             else if (total >= ThresholdPartial)
-                titleText.text = "👍 Een goed begin voor de egel!";
+                titleText.text = "Een goed begin voor de egel!";
             else
-                titleText.text = "😔 De egel had het moeilijk in jouw tuin...";
+                titleText.text = "De egel had het moeilijk in jouw tuin...";
         }
 
         // ─ Score breakdown (single text field) ─

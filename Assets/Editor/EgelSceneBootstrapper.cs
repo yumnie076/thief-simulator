@@ -96,6 +96,7 @@ public class EgelSceneBootstrapper : Editor
         managers.AddComponent<EcosystemManager>();
         managers.AddComponent<QuestManager>();
         var bioTracker = managers.AddComponent<BiodiversityTracker>();
+        managers.AddComponent<AudioManager>();
 
         // ── Step 6: Canvas ──
         var canvasGO = new GameObject("GameCanvas");
@@ -202,15 +203,15 @@ public class EgelSceneBootstrapper : Editor
 
         // Buttons
         var btn1 = CreateStyledButton(panel, "BtnHard",
-            "🟥 Vooral tegels en weinig natuur", HexColor("#d94a3d"),
+            "Vooral tegels en weinig natuur", HexColor("#d94a3d"),
             new Vector2(0, -30), new Vector2(700, 70));
 
         var btn2 = CreateStyledButton(panel, "BtnMedium",
-            "🟨 Mix van tegels, gras en wat planten", HexColor("#e8c447"),
+            "Mix van tegels, gras en wat planten", HexColor("#e8c447"),
             new Vector2(0, -120), new Vector2(700, 70));
 
         var btn3 = CreateStyledButton(panel, "BtnEasy",
-            "🟩 Veel groen, bloemen, bomen en plek voor insecten", HexColor("#5ab84a"),
+            "Veel groen, bloemen, bomen en plek voor insecten", HexColor("#5ab84a"),
             new Vector2(0, -210), new Vector2(700, 70));
 
         // Footer
@@ -284,11 +285,12 @@ public class EgelSceneBootstrapper : Editor
         hlg.childForceExpandHeight = true;
         hlg.childAlignment = TextAnchor.MiddleCenter;
 
-        string[] toolLabels = { "[1] Tegel weg", "[2] Bloem", "[3] Struik", "[4] Boom", "[5] Vijver", "[6] Bladhoop", "[7] Egelhuis" };
+        string[] toolLabels = { "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]" };
+        string[] iconNames = { "icon_hammer", "icon_flower", "icon_bush", "icon_tree", "icon_water", "icon_leaf", "icon_house" };
         Button[] toolButtons = new Button[7];
         for (int i = 0; i < toolLabels.Length; i++)
         {
-            var btnGO = CreateToolButton(toolbar, $"ToolBtn_{i}", toolLabels[i]);
+            var btnGO = CreateToolButton(toolbar, $"ToolBtn_{i}", toolLabels[i], iconNames[i]);
             toolButtons[i] = btnGO.GetComponent<Button>();
         }
 
@@ -314,7 +316,7 @@ public class EgelSceneBootstrapper : Editor
         vlg.childControlHeight = true;
 
         // HUD Header
-        var header = CreateTMP(hudGO, "HUDHeader", "🎯 TUIN MISSIE", 20,
+        var header = CreateTMP(hudGO, "HUDHeader", "TUIN MISSIE", 20,
             TextAlignmentOptions.Left, Vector2.zero, new Vector2(0, 24));
         header.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
         header.GetComponent<TextMeshProUGUI>().color = HexColor("#e8c447"); // premium yellow
@@ -407,11 +409,11 @@ public class EgelSceneBootstrapper : Editor
         bg.color = new Color(0, 0, 0, 0); // transparent
 
         // Top message
-        var msgGO = CreateTMP(panel, "HedgehogMsg", "🦔 De egel zoekt voedsel en schuilplek...", 28,
+        var msgGO = CreateTMP(panel, "HedgehogMsg", "De egel zoekt voedsel en schuilplek...", 28,
             TextAlignmentOptions.Center, new Vector2(0, 420), new Vector2(800, 60));
 
         // Timer
-        var timerGO = CreateTMP(panel, "TimerText", "⏱ 45", 36,
+        var timerGO = CreateTMP(panel, "TimerText", "45", 36,
             TextAlignmentOptions.Center, new Vector2(350, 380), new Vector2(200, 60));
 
         // Hunger bar background
@@ -439,11 +441,11 @@ public class EgelSceneBootstrapper : Editor
         hfImg.fillMethod = Image.FillMethod.Horizontal;
 
         // Hunger label
-        var hungerLabel = CreateTMP(panel, "HungerLabel", "🍽 Honger", 18,
+        var hungerLabel = CreateTMP(panel, "HungerLabel", "Honger", 18,
             TextAlignmentOptions.Right, new Vector2(300, 340), new Vector2(200, 30));
 
         // Safety label
-        var safetyTextGO = CreateTMP(panel, "SafetyLabel", "🛡️ Veiligheid", 18,
+        var safetyTextGO = CreateTMP(panel, "SafetyLabel", "Veiligheid", 18,
             TextAlignmentOptions.Right, new Vector2(300, 300), new Vector2(200, 30));
         safetyTextGO.GetComponent<TextMeshProUGUI>().color = Color.white;
 
@@ -471,7 +473,7 @@ public class EgelSceneBootstrapper : Editor
         bg.color = new Color(0, 0, 0, 0.85f);
 
         // Title
-        var titleGO = CreateTMP(panel, "ResultTitle", "🎉 Jouw tuin is een egel-paradijs!", 42,
+        var titleGO = CreateTMP(panel, "ResultTitle", "Jouw tuin is een egel-paradijs!", 42,
             TextAlignmentOptions.Center, new Vector2(0, 350), new Vector2(900, 80));
         titleGO.GetComponent<TextMeshProUGUI>().color = Color.white;
 
@@ -501,19 +503,19 @@ public class EgelSceneBootstrapper : Editor
         tipsGO.GetComponent<TextMeshProUGUI>().color = new Color(1, 1, 0.8f, 1);
 
         // Final message
-        var finalGO = CreateTMP(panel, "FinalMsg", "💡 Elke kleine verandering helpt. Eén tuin is al een verschil.", 22,
+        var finalGO = CreateTMP(panel, "FinalMsg", "Elke kleine verandering helpt. Eén tuin is al een verschil.", 22,
             TextAlignmentOptions.Center, new Vector2(0, -320), new Vector2(800, 50));
         finalGO.GetComponent<TextMeshProUGUI>().color = new Color(1, 1, 1, 0.8f);
         finalGO.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Italic;
 
         // Replay button
         var replayBtn = CreateStyledButton(panel, "ReplayButton",
-            "🔄 Speel opnieuw", HexColor("#5ab84a"),
+            "Speel opnieuw", HexColor("#5ab84a"),
             new Vector2(-120, -420), new Vector2(280, 60));
 
         // Quit button
         var quitBtn = CreateStyledButton(panel, "QuitButton",
-            "❌ Sluiten", HexColor("#d94a3d"),
+            "Sluiten", HexColor("#d94a3d"),
             new Vector2(120, -420), new Vector2(200, 60));
 
         var uiSO = new SerializedObject(ui);
@@ -540,6 +542,7 @@ public class EgelSceneBootstrapper : Editor
         rt.offsetMax = Vector2.zero;
         var img = go.AddComponent<Image>();
         img.color = new Color(0, 0, 0, 0);
+        img.raycastTarget = false; // Fix: Prevent full screen UI from blocking mouse clicks
         go.SetActive(active);
         return go;
     }
@@ -590,17 +593,19 @@ public class EgelSceneBootstrapper : Editor
         textRT.offsetMax = new Vector2(-10, -5);
         textRT.anchoredPosition = Vector2.zero;
         textRT.sizeDelta = Vector2.zero;
-        textGO.GetComponent<TextMeshProUGUI>().color = Color.white;
+        var txt = textGO.GetComponent<TextMeshProUGUI>();
+        txt.color = Color.white;
+        txt.enableWordWrapping = false; // Fix: Prevent text from stacking vertically
 
         return go;
     }
 
-    private static GameObject CreateToolButton(GameObject parent, string name, string label)
+    private static GameObject CreateToolButton(GameObject parent, string name, string label, string spriteName)
     {
         var go = new GameObject(name);
         go.transform.SetParent(parent.transform, false);
         var rt = go.AddComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(0, 50); // height controlled by layout
+        rt.sizeDelta = new Vector2(0, 75); // Taller button for modern stacked icon design
 
         var img = go.AddComponent<Image>();
         img.color = new Color(0.95f, 0.95f, 0.95f, 1f);
@@ -608,19 +613,39 @@ public class EgelSceneBootstrapper : Editor
         var btn = go.AddComponent<Button>();
 
         var le = go.AddComponent<LayoutElement>();
-        le.minHeight = 50;
-        le.preferredHeight = 50;
+        le.minHeight = 75;
+        le.preferredHeight = 75;
 
-        var textGO = CreateTMP(go, "Label", label, 18,
+        // Vertical stacking layout for the icon and label
+        var vlg = go.AddComponent<VerticalLayoutGroup>();
+        vlg.spacing = 2;
+        vlg.padding = new RectOffset(10, 10, 10, 10);
+        vlg.childAlignment = TextAnchor.MiddleCenter;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = true;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = true;
+
+        // 1. Icon GameObject
+        var iconGO = new GameObject("Icon");
+        iconGO.transform.SetParent(go.transform, false);
+        var iconImg = iconGO.AddComponent<Image>();
+        iconImg.sprite = LoadSprite(spriteName);
+        iconImg.preserveAspect = true;
+
+        var iconLE = iconGO.AddComponent<LayoutElement>();
+        iconLE.preferredHeight = 48;
+        iconLE.preferredWidth = 48;
+
+        // 2. Text Label
+        var textGO = CreateTMP(go, "Label", label, 14, 
             TextAlignmentOptions.Center, Vector2.zero, Vector2.zero);
-        var textRT = textGO.GetComponent<RectTransform>();
-        textRT.anchorMin = Vector2.zero;
-        textRT.anchorMax = Vector2.one;
-        textRT.offsetMin = new Vector2(4, 2);
-        textRT.offsetMax = new Vector2(-4, -2);
-        textRT.anchoredPosition = Vector2.zero;
-        textRT.sizeDelta = Vector2.zero;
-        textGO.GetComponent<TextMeshProUGUI>().color = HexColor("#333333");
+        var txt = textGO.GetComponent<TextMeshProUGUI>();
+        txt.color = HexColor("#333333");
+        txt.enableWordWrapping = false;
+        
+        var textLE = textGO.AddComponent<LayoutElement>();
+        textLE.preferredHeight = 20;
 
         return go;
     }

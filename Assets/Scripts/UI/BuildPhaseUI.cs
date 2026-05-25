@@ -31,13 +31,13 @@ public class BuildPhaseUI : MonoBehaviour
 
     private static readonly string[] ToolLabels =
     {
-        "🔨 [1] Tegel weg",
-        "🌸 [2] Bloem",
-        "🌿 [3] Struik",
-        "🌳 [4] Boom",
-        "💧 [5] Vijver",
-        "🍂 [6] Bladhoop",
-        "🏠 [7] Egelhuis"
+        "[1]",
+        "[2]",
+        "[3]",
+        "[4]",
+        "[5]",
+        "[6]",
+        "[7]"
     };
 
     // Maps button index to the string key used by EducationContent & GardenManager
@@ -110,7 +110,7 @@ public class BuildPhaseUI : MonoBehaviour
 
     private void SetupDoneButton()
     {
-        if (doneButtonText != null) doneButtonText.text = "✅ Klaar — Roep de egel!";
+        if (doneButtonText != null) doneButtonText.text = "Klaar — Roep de egel!";
         if (doneButton != null) doneButton.onClick.AddListener(OnDoneClicked);
     }
 
@@ -134,6 +134,13 @@ public class BuildPhaseUI : MonoBehaviour
                 if (img != null)
                 {
                     img.color = (i == index) ? AccentColour : new Color(0.95f, 0.95f, 0.95f, 1f);
+                }
+
+                // Change text color for premium readability
+                var txt = toolButtons[i].GetComponentInChildren<TMP_Text>();
+                if (txt != null)
+                {
+                    txt.color = (i == index) ? Color.white : new Color(0.2f, 0.2f, 0.2f, 1f);
                 }
             }
         }
@@ -181,7 +188,7 @@ public class BuildPhaseUI : MonoBehaviour
     public void UpdateBiodiversity(float score)
     {
         if (biodiversityText != null)
-            biodiversityText.text = $"🌱 Biodiversiteit: {score:F0}";
+            biodiversityText.text = $"Biodiversiteit: {score:F0}";
     }
 
     // ── Done button ─────────────────────────────────────────────
@@ -206,6 +213,11 @@ public class BuildPhaseUI : MonoBehaviour
 
         // Highlight the default tool (Flower, index 1) immediately on show
         SelectTool(1);
+
+        if (EducationPopup.Instance != null)
+        {
+            EducationPopup.Instance.ShowMessage("Maak de tuin egelvriendelijk!\nVergeet niet een egelhuisje te plaatsen om straks te schuilen voor de vos!");
+        }
     }
 
     public void Hide()

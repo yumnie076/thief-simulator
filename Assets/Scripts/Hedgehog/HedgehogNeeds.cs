@@ -17,7 +17,7 @@ public class HedgehogNeeds : MonoBehaviour
     [SerializeField] private float _safety = 100f;
 
     /// <summary>Rate at which hunger decreases per second.</summary>
-    private const float HungerDecayRate = 8f;
+    private const float HungerDecayRate = 1.2f;
 
     public float Hunger
     {
@@ -32,7 +32,7 @@ public class HedgehogNeeds : MonoBehaviour
     public float Safety
     {
         get => _safety;
-        private set
+        set
         {
             _safety = Mathf.Clamp(value, 0f, 100f);
             OnSafetyChanged?.Invoke(_safety);

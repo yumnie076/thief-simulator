@@ -44,6 +44,12 @@ public class ScoreManager : MonoBehaviour
         OnScoreChanged?.Invoke(TotalScore);
     }
 
+    public void AddBiodiversity(float points)
+    {
+        BiodiversityScore += points;
+        OnScoreChanged?.Invoke(TotalScore);
+    }
+
     public void SetBiodiversity(float score)
     {
         BiodiversityScore = score;
