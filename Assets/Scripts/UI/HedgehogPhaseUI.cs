@@ -21,8 +21,8 @@ public class HedgehogPhaseUI : MonoBehaviour
     [SerializeField] private TMP_Text safetyText;
     [SerializeField] private Image safetyIcon;
 
-    [Header("Settings")]
-    [SerializeField] private float totalTime = 60f;
+    // ── Timer duration (const so scene-serialized values can never override it) ──
+    private const float totalTime = 60f;
 
     // ── Colours for hunger gradient ─────────────────────────────
     private static readonly Color HungerFull  = new Color32(90, 184, 74, 255);  // green #5ab84a
@@ -112,6 +112,19 @@ public class HedgehogPhaseUI : MonoBehaviour
         gameObject.SetActive(true);
         timeRemaining = totalTime;
         isRunning = true;
+
+        // Force-set all labels at runtime to override scene-serialized emoji text
+        if (headerText != null) headerText.text = "De egel zoekt voedsel en schuilplek...";
+        if (safetyText != null) safetyText.text = "Veiligheid";
+
+        // Find and fix the HungerLabel if it exists (set by Bootstrapper, could have old emoji)
+        var hungerLabel = transform.Find("HungerLabel");
+        if (hungerLabel != null)
+        {
+            var tmp = hungerLabel.GetComponent<TMP_Text>();
+            if (tmp != null) tmp.text = "Honger";
+        }
+
         SetHunger(1f);
         SetSafety(false);
         UpdateTimerDisplay();

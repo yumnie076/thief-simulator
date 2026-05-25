@@ -51,8 +51,19 @@ public class ResultScreenUI : MonoBehaviour
     // ── Button setup ────────────────────────────────────────────
     private void SetupButtons()
     {
-        if (replayButton != null) replayButton.onClick.AddListener(OnReplayClicked);
-        if (quitButton != null)   quitButton.onClick.AddListener(OnQuitClicked);
+        if (replayButton != null)
+        {
+            replayButton.onClick.AddListener(OnReplayClicked);
+            // Force-set label so scene-serialized emoji text is overridden
+            var lbl = replayButton.GetComponentInChildren<TMP_Text>();
+            if (lbl != null) lbl.text = "Speel opnieuw";
+        }
+        if (quitButton != null)
+        {
+            quitButton.onClick.AddListener(OnQuitClicked);
+            var lbl = quitButton.GetComponentInChildren<TMP_Text>();
+            if (lbl != null) lbl.text = "Sluiten";
+        }
     }
 
     // ── Public API ──────────────────────────────────────────────
