@@ -29,19 +29,19 @@ public class BuildPhaseUI : MonoBehaviour
     private static readonly Color AccentColour = new Color32(90, 184, 74, 255); // #5ab84a
     private static readonly Color InactiveColour = new Color(1f, 1f, 1f, 0f);   // transparent
 
-    private static readonly string[] ToolLabels =
+    private string[] ToolLabels =
     {
-        "[1]",
-        "[2]",
-        "[3]",
-        "[4]",
-        "[5]",
-        "[6]",
-        "[7]"
+        "Sloop [1]",
+        "Bloem [2]",
+        "Struik [3]",
+        "Boom [4]",
+        "Water [5]",
+        "Bladeren [6]",
+        "Huisje [7]"
     };
 
     // Maps button index to the string key used by EducationContent & GardenManager
-    private static readonly string[] ToolKeys =
+    private string[] ToolKeys =
     {
         "RemoveTile", "Flower", "Bush", "Tree", "Pond", "LeafPile", "House"
     };
@@ -87,16 +87,66 @@ public class BuildPhaseUI : MonoBehaviour
         UnsubscribeGardenEvents();
     }
 
+    private string[] ToolSpriteNames =
+    {
+        "icon_hammer", "icon_flower", "icon_bush", "icon_tree", "icon_water", "icon_leaf", "icon_house"
+    };
+
     // ── Tool button setup ───────────────────────────────────────
     private void SetupToolButtons()
     {
+        AppendUnlockableButtons();
+
         for (int i = 0; i < toolButtons.Length && i < ToolLabels.Length; i++)
         {
             if (toolButtons[i] == null) continue;
 
+            // Load sprite and add Image to the button
+            string spriteName = (i < ToolSpriteNames.Length) ? ToolSpriteNames[i] : "icon_house"; 
+            if (i == 7) spriteName = "icon_flower"; // Sunflower
+            if (i == 8) spriteName = "icon_house";  // Luxe Huisje
+
+            Sprite iconSprite = Resources.Load<Sprite>($"EgelGame/{spriteName}");
+            if (iconSprite != null)
+            {
+                // Create a new child GameObject for the Icon
+                GameObject iconGo = new GameObject("Icon_" + spriteName);
+                iconGo.transform.SetParent(toolButtons[i].transform, false);
+                
+                // Add Image
+                Image iconImage = iconGo.AddComponent<Image>();
+                iconImage.sprite = iconSprite;
+                iconImage.raycastTarget = false; // Don't block clicks
+                
+                // Add LayoutElement to ignore any parent layout groups on the button
+                UnityEngine.UI.LayoutElement le = iconGo.AddComponent<UnityEngine.UI.LayoutElement>();
+                le.ignoreLayout = true;
+
+                // Position it above the text
+                RectTransform rt = iconGo.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(40, 40);
+                rt.anchoredPosition = new Vector2(0, 15);
+                
+                // Ensure it renders on top
+                iconGo.transform.SetAsLastSibling();
+            }
+            else
+            {
+                Debug.LogWarning($"[BuildPhaseUI] Could not load sprite: EgelGame/{spriteName}");
+            }
+
             // Set label
             TMP_Text label = toolButtons[i].GetComponentInChildren<TMP_Text>();
-            if (label != null) label.text = ToolLabels[i];
+            if (label != null) 
+            {
+                label.text = ToolLabels[i];
+                // Move text down slightly to make room for icon
+                RectTransform labelRt = label.GetComponent<RectTransform>();
+                if (labelRt != null) labelRt.anchoredPosition = new Vector2(0, -18);
+                label.alignment = TextAlignmentOptions.Bottom;
+            }
 
             // Click handler (captured by value)
             int index = i;
@@ -112,6 +162,45 @@ public class BuildPhaseUI : MonoBehaviour
     {
         if (doneButtonText != null) doneButtonText.text = "Klaar — Roep de egel!";
         if (doneButton != null) doneButton.onClick.AddListener(OnDoneClicked);
+    }
+
+    private void AppendUnlockableButtons()
+    {
+        if (toolButtons.Length >= 8) return; // Already appended
+
+        float highScore = PlayerPrefs.GetFloat("HighScore", 0f);
+        bool sunUnlocked = highScore >= 200f;
+        bool houseUnlocked = highScore >= 400f;
+
+        if (sunUnlocked || houseUnlocked)
+        {
+            var newBtns = new System.Collections.Generic.List<Button>(toolButtons);
+            var newHls = new System.Collections.Generic.List<Image>(toolHighlights);
+            var newLbls = new System.Collections.Generic.List<string>(ToolLabels);
+            var newKeys = new System.Collections.Generic.List<string>(ToolKeys);
+
+            if (sunUnlocked)
+            {
+                var go = Instantiate(toolButtons[6].gameObject, toolButtons[6].transform.parent);
+                newBtns.Add(go.GetComponent<Button>());
+                newHls.Add(go.transform.Find("Highlight")?.GetComponent<Image>());
+                newLbls.Add("Zonnebloem");
+                newKeys.Add("Sunflower");
+            }
+            if (houseUnlocked)
+            {
+                var go = Instantiate(toolButtons[6].gameObject, toolButtons[6].transform.parent);
+                newBtns.Add(go.GetComponent<Button>());
+                newHls.Add(go.transform.Find("Highlight")?.GetComponent<Image>());
+                newLbls.Add("Luxe Huisje");
+                newKeys.Add("House"); // Luxe house falls back to house key for now
+            }
+
+            toolButtons = newBtns.ToArray();
+            toolHighlights = newHls.ToArray();
+            ToolLabels = newLbls.ToArray();
+            ToolKeys = newKeys.ToArray();
+        }
     }
 
     // ── Tool selection ──────────────────────────────────────────
@@ -146,9 +235,9 @@ public class BuildPhaseUI : MonoBehaviour
         }
 
         // Bridge to GardenManager
-        if (GardenManager.Instance != null && index >= 0 && index < 7)
+        if (GardenManager.Instance != null && index >= 0 && index < toolButtons.Length)
         {
-            PlaceableTool.ToolType[] types = {
+            var typeList = new System.Collections.Generic.List<PlaceableTool.ToolType> {
                 PlaceableTool.ToolType.RemoveTile,
                 PlaceableTool.ToolType.Flower,
                 PlaceableTool.ToolType.Bush,
@@ -157,7 +246,13 @@ public class BuildPhaseUI : MonoBehaviour
                 PlaceableTool.ToolType.LeafPile,
                 PlaceableTool.ToolType.HedgehogHouse
             };
-            GardenManager.Instance.SelectTool(types[index]);
+
+            float hs = PlayerPrefs.GetFloat("HighScore", 0f);
+            if (hs >= 200f) typeList.Add(PlaceableTool.ToolType.Sunflower);
+            if (hs >= 400f) typeList.Add(PlaceableTool.ToolType.HedgehogHouse); // Both buttons exist but act as House for now or we could add a LuxeHouse object
+
+            if (index < typeList.Count)
+                GardenManager.Instance.SelectTool(typeList[index]);
         }
     }
 
@@ -188,7 +283,17 @@ public class BuildPhaseUI : MonoBehaviour
     public void UpdateBiodiversity(float score)
     {
         if (biodiversityText != null)
-            biodiversityText.text = $"Biodiversiteit: {score:F0}";
+        {
+            float total = ScoreManager.Instance != null ? ScoreManager.Instance.TotalScore : score;
+            biodiversityText.text = $"Biodiv: {score:F0} | Totaal: {total:F0}";
+        }
+    }
+
+    public void UpdateTotalScore(float score)
+    {
+        // Force refresh of biodiversity text which contains the total
+        if (BiodiversityTracker.Instance != null)
+            UpdateBiodiversity(BiodiversityTracker.Instance.BiodiversityScore);
     }
 
     // ── Done button ─────────────────────────────────────────────
@@ -216,7 +321,10 @@ public class BuildPhaseUI : MonoBehaviour
 
         if (EducationPopup.Instance != null)
         {
-            EducationPopup.Instance.ShowMessage("Maak de tuin egelvriendelijk!\nVergeet niet een egelhuisje te plaatsen om straks te schuilen voor de vos!");
+            string goalText = (GameManager.Instance != null && !string.IsNullOrEmpty(GameManager.Instance.LevelGoalText))
+                ? GameManager.Instance.LevelGoalText
+                : "Maak de tuin egelvriendelijk!\nVergeet niet een egelhuisje te plaatsen om straks te schuilen voor de vos!";
+            EducationPopup.Instance.ShowMessage(goalText);
         }
     }
 
@@ -242,6 +350,8 @@ public class BuildPhaseUI : MonoBehaviour
             GardenManager.Instance.OnActionUsed += UpdateActions;
         if (BiodiversityTracker.Instance != null)
             BiodiversityTracker.Instance.OnScoreChanged += UpdateBiodiversity;
+        if (ScoreManager.Instance != null)
+            ScoreManager.Instance.OnScoreChanged += UpdateTotalScore;
     }
 
     private void UnsubscribeGardenEvents()
@@ -250,5 +360,7 @@ public class BuildPhaseUI : MonoBehaviour
             GardenManager.Instance.OnActionUsed -= UpdateActions;
         if (BiodiversityTracker.Instance != null)
             BiodiversityTracker.Instance.OnScoreChanged -= UpdateBiodiversity;
+        if (ScoreManager.Instance != null)
+            ScoreManager.Instance.OnScoreChanged -= UpdateTotalScore;
     }
 }

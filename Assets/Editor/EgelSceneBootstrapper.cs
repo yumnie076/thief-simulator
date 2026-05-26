@@ -168,6 +168,11 @@ public class EgelSceneBootstrapper : Editor
         // ── Build Result Panel content ──
         BuildResultPanel(resultPanel, resultUI);
 
+        // ── Hide overlapping panels so the Scene View stays clean ──
+        buildPanel.SetActive(false);
+        hedgehogPanel.SetActive(false);
+        resultPanel.SetActive(false);
+
         // ── Mark scene dirty ──
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
@@ -181,42 +186,56 @@ public class EgelSceneBootstrapper : Editor
 
     private static void BuildIntroPanel(GameObject panel, IntroScreenUI ui)
     {
-        // Background overlay
+        // Background — warm earthy garden green
         var bg = panel.GetComponent<Image>();
-        bg.color = HexColor("#d4e8d4");
+        bg.color = HexColor("#2a4a20"); // Deep forest green
 
-        // Title
+        // Title — warm wood brown on dark green bg
         var titleGO = CreateTMP(panel, "Title", "EGEL OP EXPEDITIE", 56,
-            TextAlignmentOptions.Center, new Vector2(0, 200), new Vector2(800, 80));
+            TextAlignmentOptions.Center, new Vector2(0, 350), new Vector2(800, 80));
         var titleTMP = titleGO.GetComponent<TextMeshProUGUI>();
-        titleTMP.color = HexColor("#2d7a2a");
+        titleTMP.color = HexColor("#f5e6c8"); // Warm parchment/wood
         titleTMP.fontStyle = FontStyles.Bold;
 
         // Subtitle
-        CreateTMP(panel, "Subtitle", "Hoe egelvriendelijk is jouw tuin?", 28,
-            TextAlignmentOptions.Center, new Vector2(0, 140), new Vector2(800, 50));
+        var subtitleGO = CreateTMP(panel, "Subtitle", "Hoe egelvriendelijk is jouw tuin?", 28,
+            TextAlignmentOptions.Center, new Vector2(0, 290), new Vector2(800, 50));
+        subtitleGO.GetComponent<TextMeshProUGUI>().color = HexColor("#c8deb0"); // Soft green
+
+        // Instructions
+        string instructions = "DOEL VAN HET SPEL:\n" +
+                              "1. Je tuin ligt vol met grijze vuilniszakken. Ruim ze op met de 'Sloop' knop!\n" +
+                              "2. Plaats natuur (bloemen, bomen, water) om de tuin egelvriendelijk te maken.\n" +
+                              "3. Na 60 seconden wordt het nacht. De egel komt langs om te eten en te schuilen.\n" +
+                              "4. Help de egel overleven! Let op de vos!";
+        var instructionsGO = CreateTMP(panel, "Instructions", instructions, 20,
+            TextAlignmentOptions.Center, new Vector2(0, 160), new Vector2(1000, 150));
+        instructionsGO.GetComponent<TextMeshProUGUI>().color = HexColor("#e8c447"); // Warning yellow
+        instructionsGO.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
 
         // Question
-        var questionGO = CreateTMP(panel, "Question", "Hoe groen is jouw tuin het meest?", 32,
-            TextAlignmentOptions.Center, new Vector2(0, 60), new Vector2(800, 50));
+        var questionGO = CreateTMP(panel, "Question", "Kies een startniveau voor jouw tuin:", 28,
+            TextAlignmentOptions.Center, new Vector2(0, 20), new Vector2(800, 50));
         questionGO.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+        questionGO.GetComponent<TextMeshProUGUI>().color = Color.white;
 
-        // Buttons
+        // Buttons — earthy tones
         var btn1 = CreateStyledButton(panel, "BtnHard",
-            "Vooral tegels en weinig natuur", HexColor("#d94a3d"),
-            new Vector2(0, -30), new Vector2(700, 70));
+            "Moeilijk: Vooral tegels en veel vuilniszakken", HexColor("#8b4513"), // Saddle brown
+            new Vector2(0, -60), new Vector2(700, 60));
 
         var btn2 = CreateStyledButton(panel, "BtnMedium",
-            "Mix van tegels, gras en wat planten", HexColor("#e8c447"),
-            new Vector2(0, -120), new Vector2(700, 70));
+            "Normaal: Mix van tegels, gras en vuilnis", HexColor("#6b8e23"), // Olive drab
+            new Vector2(0, -140), new Vector2(700, 60));
 
         var btn3 = CreateStyledButton(panel, "BtnEasy",
-            "Veel groen, bloemen, bomen en plek voor insecten", HexColor("#5ab84a"),
-            new Vector2(0, -210), new Vector2(700, 70));
+            "Makkelijk: Al wat natuur aanwezig", HexColor("#228b22"), // Forest green
+            new Vector2(0, -220), new Vector2(700, 60));
 
         // Footer
-        CreateTMP(panel, "Footer", "Een Tuinen van de Toekomst x Avans project", 16,
+        var footerGO = CreateTMP(panel, "Footer", "Een Tuinen van de Toekomst x Avans project", 16,
             TextAlignmentOptions.Center, new Vector2(0, -340), new Vector2(800, 40));
+        footerGO.GetComponent<TextMeshProUGUI>().color = HexColor("#a0c890");
 
         // Wire IntroScreenUI references
         var uiSO = new SerializedObject(ui);
@@ -276,16 +295,16 @@ public class EgelSceneBootstrapper : Editor
         toolbarRT.offsetMax = Vector2.zero;
 
         var toolbarImg = toolbar.AddComponent<Image>();
-        toolbarImg.color = new Color(1, 1, 1, 0.9f);
+        toolbarImg.color = new Color(0.2f, 0.12f, 0.08f, 0.95f); // Dark wood background for inventory
 
         var hlg = toolbar.AddComponent<HorizontalLayoutGroup>();
-        hlg.spacing = 10;
-        hlg.padding = new RectOffset(10, 10, 10, 10);
+        hlg.spacing = 15;
+        hlg.padding = new RectOffset(15, 15, 15, 15);
         hlg.childForceExpandWidth = true;
         hlg.childForceExpandHeight = true;
         hlg.childAlignment = TextAnchor.MiddleCenter;
 
-        string[] toolLabels = { "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]" };
+        string[] toolLabels = { "Sloop", "Bloem", "Struik", "Boom", "Water", "Bladeren", "Huisje" };
         string[] iconNames = { "icon_hammer", "icon_flower", "icon_bush", "icon_tree", "icon_water", "icon_leaf", "icon_house" };
         Button[] toolButtons = new Button[7];
         for (int i = 0; i < toolLabels.Length; i++)
@@ -316,10 +335,19 @@ public class EgelSceneBootstrapper : Editor
         vlg.childControlHeight = true;
 
         // HUD Header
-        var header = CreateTMP(hudGO, "HUDHeader", "TUIN MISSIE", 20,
-            TextAlignmentOptions.Left, Vector2.zero, new Vector2(0, 24));
+        var header = CreateTMP(hudGO, "HUDHeader", "JOUW MISSIE:\nBouw een diervriendelijke tuin!\nKies een item en klik in de tuin om het te plaatsen.", 16,
+            TextAlignmentOptions.Left, Vector2.zero, new Vector2(0, 50));
         header.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
         header.GetComponent<TextMeshProUGUI>().color = HexColor("#e8c447"); // premium yellow
+
+        // Controls Text
+        string controls = "BEDIENING:\n" +
+                          "• Bewegen: W A S D of Pijltjestoetsen\n" +
+                          "• Item selecteren: Muisklik op de houten balk onderin (of toets 1 t/m 7)\n" +
+                          "• Item plaatsen/slopen: Muisklik in de tuin (of Spatiebalk)";
+        var controlsText = CreateTMP(hudGO, "ControlsText", controls, 14,
+            TextAlignmentOptions.Left, Vector2.zero, new Vector2(0, 50));
+        controlsText.GetComponent<TextMeshProUGUI>().color = Color.white;
 
         // Quest Text
         var questText = CreateTMP(hudGO, "QuestText", "Laden...", 16,
@@ -470,14 +498,14 @@ public class EgelSceneBootstrapper : Editor
     private static void BuildResultPanel(GameObject panel, ResultScreenUI ui)
     {
         var bg = panel.GetComponent<Image>();
-        bg.color = new Color(0, 0, 0, 0.85f);
+        bg.color = new Color(0.12f, 0.18f, 0.08f, 0.98f); // Very dark, almost fully opaque
 
         // Title
         var titleGO = CreateTMP(panel, "ResultTitle", "Jouw tuin is een egel-paradijs!", 42,
             TextAlignmentOptions.Center, new Vector2(0, 350), new Vector2(900, 80));
         titleGO.GetComponent<TextMeshProUGUI>().color = Color.white;
 
-        // Score box
+        // Score box (container only, no background)
         var scoreBox = new GameObject("ScoreBox");
         scoreBox.transform.SetParent(panel.transform, false);
         var sbRT = scoreBox.AddComponent<RectTransform>();
@@ -485,10 +513,8 @@ public class EgelSceneBootstrapper : Editor
         sbRT.anchorMax = new Vector2(0.8f, 0.7f);
         sbRT.offsetMin = Vector2.zero;
         sbRT.offsetMax = Vector2.zero;
-        var sbImg = scoreBox.AddComponent<Image>();
-        sbImg.color = new Color(1, 1, 1, 0.15f);
 
-        var scoreText = CreateTMP(scoreBox, "ScoreText", "EGEL SCORE\n\nBiodiversiteit: 0\nVoedsel: 0\nWater: 0\nSchuilplek: 0\n───────\nTOTAAL: 0", 26,
+        var scoreText = CreateTMP(scoreBox, "ScoreText", "EGEL SCORE\n\nBiodiversiteit: 0\nVoedsel: 0\nWater: 0\nSchuilplek: 0\n---\nTOTAAL: 0", 26,
             TextAlignmentOptions.Center, Vector2.zero, new Vector2(0, 0));
         var stRT = scoreText.GetComponent<RectTransform>();
         stRT.anchorMin = new Vector2(0.1f, 0.1f);
@@ -616,36 +642,25 @@ public class EgelSceneBootstrapper : Editor
         le.minHeight = 75;
         le.preferredHeight = 75;
 
-        // Vertical stacking layout for the icon and label
+        // Vertical stacking layout for the text
         var vlg = go.AddComponent<VerticalLayoutGroup>();
-        vlg.spacing = 2;
-        vlg.padding = new RectOffset(10, 10, 10, 10);
+        vlg.padding = new RectOffset(5, 5, 5, 5);
         vlg.childAlignment = TextAnchor.MiddleCenter;
         vlg.childForceExpandWidth = true;
         vlg.childForceExpandHeight = true;
         vlg.childControlWidth = true;
         vlg.childControlHeight = true;
 
-        // 1. Icon GameObject
-        var iconGO = new GameObject("Icon");
-        iconGO.transform.SetParent(go.transform, false);
-        var iconImg = iconGO.AddComponent<Image>();
-        iconImg.sprite = LoadSprite(spriteName);
-        iconImg.preserveAspect = true;
-
-        var iconLE = iconGO.AddComponent<LayoutElement>();
-        iconLE.preferredHeight = 48;
-        iconLE.preferredWidth = 48;
-
-        // 2. Text Label
-        var textGO = CreateTMP(go, "Label", label, 14, 
+        // Text Label
+        var textGO = CreateTMP(go, "Label", label, 20, 
             TextAlignmentOptions.Center, Vector2.zero, Vector2.zero);
         var txt = textGO.GetComponent<TextMeshProUGUI>();
         txt.color = HexColor("#333333");
         txt.enableWordWrapping = false;
+        txt.fontStyle = FontStyles.Bold;
         
         var textLE = textGO.AddComponent<LayoutElement>();
-        textLE.preferredHeight = 20;
+        textLE.preferredHeight = 40;
 
         return go;
     }

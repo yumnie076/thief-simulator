@@ -17,6 +17,9 @@ public class GameManager : MonoBehaviour
     /// <summary>Total score accumulated across all phases.</summary>
     public float TotalScore { get; set; } = 0f;
 
+    /// <summary>Goal text for the selected level, shown at build phase start.</summary>
+    public string LevelGoalText { get; set; } = "";
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -33,5 +36,6 @@ public class GameManager : MonoBehaviour
         GardenStartState = 1;
         HedgehogSafe = false;
         TotalScore = 0f;
+        LevelGoalText = "";
     }
 }

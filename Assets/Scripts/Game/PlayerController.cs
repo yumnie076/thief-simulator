@@ -47,7 +47,18 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         // Apply movement
-        rb.MovePosition(rb.position + movement * moveSpeed * Time.fixedDeltaTime);
+        Vector2 targetPos = rb.position + movement * moveSpeed * Time.fixedDeltaTime;
+
+        // Clamp to garden boundaries
+        if (GardenManager.Instance != null)
+        {
+            float w = GardenManager.Instance.GardenWidth;
+            float h = GardenManager.Instance.GardenHeight;
+            targetPos.x = Mathf.Clamp(targetPos.x, 0.5f, w - 0.5f);
+            targetPos.y = Mathf.Clamp(targetPos.y, 0.5f, h - 0.5f);
+        }
+
+        rb.MovePosition(targetPos);
     }
 
     private void LateUpdate()

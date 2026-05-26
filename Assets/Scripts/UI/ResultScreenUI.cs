@@ -84,25 +84,41 @@ public class ResultScreenUI : MonoBehaviour
                 titleText.text = "De egel had het moeilijk in jouw tuin...";
         }
 
+        // ─ Save high score ─
+        float currentHighScore = PlayerPrefs.GetFloat("HighScore", 0f);
+        if (total > currentHighScore)
+        {
+            PlayerPrefs.SetFloat("HighScore", total);
+            PlayerPrefs.Save();
+        }
+
         // ─ Score breakdown (single text field) ─
         if (scoreText != null)
         {
             scoreText.text = $"EGEL SCORE\n\n" +
-                $"Biodiversiteit:      {biodiversity:F0} punten\n" +
-                $"Voedsel gevonden:    {food:F0} punten\n" +
-                $"Water bereikt:       {water:F0} punten\n" +
-                $"Veilige schuilplek:  {shelter:F0} punten\n" +
-                $"───────────────────\n" +
-                $"<b>TOTAAL:             {total:F0} punten</b>";
+                $"Biodiversiteit: {biodiversity:F0}\n" +
+                $"Voedsel: {food:F0}\n" +
+                $"Water: {water:F0}\n" +
+                $"Schuilplek: {shelter:F0}\n" +
+                $"---\n" +
+                $"<b>TOTAAL: {total:F0}</b>";
+
+            // Unlock notifications for new milestones
+            if (total >= 400f && currentHighScore < 400f)
+                scoreText.text += "\n\nNIEUW ONTGRENDELD: Luxe Egelvilla!";
+            else if (total >= 200f && currentHighScore < 200f)
+                scoreText.text += "\n\nNIEUW ONTGRENDELD: Zonnebloem!";
         }
 
-        // ─ Random tips (pick 3) ─
+        // ─ Random tip (pick 1) ─
         if (tipsText != null)
         {
             List<string> allTips = EducationContent.EndTips.Values.ToList();
             ShuffleList(allTips);
-            int count = Mathf.Min(3, allTips.Count);
-            tipsText.text = string.Join("\n\n", allTips.GetRange(0, count));
+            if (allTips.Count > 0)
+            {
+                tipsText.text = "Tip van de boswachter:\n" + allTips[0];
+            }
         }
 
         Show();
@@ -125,7 +141,7 @@ public class ResultScreenUI : MonoBehaviour
     private void OnReplayClicked()
     {
         if (replayButton != null) replayButton.interactable = false; // prevent double-fire
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        PhaseController.Instance?.AdvanceToNextPhase();
     }
 
     private void OnQuitClicked()

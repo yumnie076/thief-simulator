@@ -155,3 +155,82 @@ Format:
 ### New pattern to remember: Procedural audio via Mathf.Sin is a highly effective way to add 'juice' to prototypes when external audio files aren't available.
 
 ---
+
+## 2026-05-25 — Egel op Expeditie — Visual & Animation Upgrade
+### Wins: Added GardenAnimator (sway/breathe/wave/wobble per object type), pop-in placement animation, living background with grass color variation + decorative daisies + wooden fence border, garden-themed UI (forest green intro, earthy buttons, warm result screen), hedgehog walking wobble + eat pulse, fox walking sway + chase red tint flash, and intro title breathing animation.
+### Misses: None.
+### New pattern to remember: Garden feel = movement + color variation + warm earthy tones. Even tiny sine-wave animations on Z-rotation make a huge difference in making a game feel alive.
+
+---
+
+### Wins: Made GardenObject ExecuteAlways for Scene View editing. Added UseCustomMap toggle to GardenManager and an Editor ContextMenu to generate grass grids.
+### Misses: None.
+### New pattern to remember: [ExecuteAlways] combined with OnValidate makes it super easy to let designers use scripts to build maps in the Scene View without needing prefabs.
+
+---
+
+### Wins: Fixed game-breaking bug where the hedgehog would die instantly from passive safety decay when chased by fox. Redesigned the inventory toolbar to look like a wood panel with clear tool labels. Added clear instructions to the HUD. Added procedurally generated neighborhood background (streets, houses) outside the garden bounds.
+### Misses: None.
+### New pattern to remember: Never tie failure conditions to passive float decay unless balanced perfectly. Physical collision with predators is much more intuitive.
+
+---
+
+### Wins: Fixed PlayerController bounds so the gardener cannot walk outside the map. Discovered user is not triggering Editor scripts.
+### Misses: None.
+### New pattern to remember: Always explicitly remind beginners to trigger Editor tools (like Bootstrappers) when UI changes are made via Editor scripts, because they will default to just pressing Play.
+
+---
+
+### Wins: Fixed gardener tracking hedgehog inputs by thoroughly finding and destroying all PlayerController objects. Redesigned tool buttons to purely use text to prevent confusion from missing icons.
+### Misses: None.
+### New pattern to remember: If icons fail to load or are confusing, text-only UI can be much more reliable for beginners.
+
+---
+
+### Wins: Fixed scaling animation bug causing ponds/leaf piles to instantly disappear. Added clear tutorial text to Intro Screen explaining game goal and identifying procedural trash bags.
+### Misses: None.
+### New pattern to remember: Procedural graphics can be confusing without context; always label game elements clearly. When mixing tween animations and continuous logic, avoid caching Vector3.zero during pop-in phases.
+
+---
+
+### Wins: Replaced hardcoded inventory names in BuildPhaseUI.cs to properly show tool names alongside their keyboard shortcuts. Added permanent on-screen controls (WASD, Mouse/Space) to the HUD for clarity.
+### Misses: None.
+### New pattern to remember: Never rely on external scripts to override UI text if another script re-initializes that text dynamically in Awake/Start. Always make controls immediately visible on-screen for beginners.
+
+---
+
+### Wins: Fixed end-screen text formatting glitch by simplifying string length. Fixed replay button bug that failed if the scene wasn't added to Build Settings by changing SceneManager to load by scene name.
+### Misses: None.
+### New pattern to remember: SceneManager.LoadScene(buildIndex) fails if the scene isn't in Build Settings; always use scene name for quick editor scripts.
+
+---
+
+### Wins: Fixed physics bug where hedgehog couldn't eat snacks because neither object had a Rigidbody2D. Fixed Result Screen UI glitch by removing the half-height background image and ensuring the full-screen Canvas background renders properly.
+### Misses: None.
+### New pattern to remember: Unity's OnTriggerEnter2D requires at least one of the colliding objects to have a Rigidbody2D component (even if Kinematic). UI background alphas won't show up clearly if RaycastTarget is disabled while layered with transparent parents.
+
+---
+
+### Wins: Updated ResultScreenUI to show only one educational tip at a time instead of three to prevent text overload.
+### Misses: None.
+### New pattern to remember: Do not overwhelm users with blocks of text. Stick to one concise takeaway per screen.
+
+---
+
+### Wins: Fixed rapid-fire phase transition bug caused by the Fox continuously catching the Hedgehog. Added isTransitioning flag to PhaseController and hasCaught flag to FoxAI.
+### Misses: Result UI updated dynamically on a rapid loop due to the aforementioned bug.
+### New pattern to remember: Always check state before invoking events in Unity Update loops, especially for overlapping triggers/collisions or repeated state checks.
+
+---
+
+### Wins: Fixed Replay button doing nothing by adding EditorSceneManager fallback in PhaseController for scenes not yet added to Build Settings, and properly routing the UI button to PhaseController.
+### Misses: None.
+### New pattern to remember: SceneManager.LoadScene(name) will fail silently (or just log an error) and do nothing if the scene hasn't been added to the Build Settings. Always provide an EditorSceneManager fallback for playtesting unsaved/unbuilt scenes.
+
+---
+
+### Wins: Implemented 5 major features (Audio Ambience, SimpleParticle system, Level Goals, Hedgehog Drinking/Friend actions, and Unlockables via PlayerPrefs). Code is well-structured and properly integrated into PhaseController.
+### Misses: None.
+### New pattern to remember: Use parallel subagents to quickly implement well-defined, modular features in large codebases. Always double check cross-script integrations (like starting/stopping audio) when agents finish.
+
+---

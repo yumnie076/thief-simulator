@@ -48,6 +48,16 @@ public class IntroScreenUI : MonoBehaviour
             PhaseController.Instance.OnPhaseChanged -= OnPhaseChanged;
     }
 
+    private void Update()
+    {
+        // Breathing animation on the title
+        if (titleText != null && gameObject.activeSelf)
+        {
+            float breathe = 1f + Mathf.Sin(Time.time * 1.5f) * 0.02f;
+            titleText.transform.localScale = new Vector3(breathe, breathe, 1f);
+        }
+    }
+
     // ── Text setup ──────────────────────────────────────────────
     private void SetupTexts()
     {
@@ -60,9 +70,9 @@ public class IntroScreenUI : MonoBehaviour
     // ── Button setup ────────────────────────────────────────────
     private void SetupButtons()
     {
-        ConfigureButton(hardButton,   "Vooral tegels en weinig natuur",                        ColourRed,    0);
-        ConfigureButton(mediumButton, "Mix van tegels, gras en wat planten",                   ColourYellow, 1);
-        ConfigureButton(easyButton,   "Veel groen, bloemen, bomen en plek voor insecten",      ColourGreen,  2);
+        ConfigureButton(hardButton,   "Level 3: Expert\nEen versteende tuin vol afval. Maak het leefbaar!",       ColourRed,    0);
+        ConfigureButton(mediumButton, "Level 1: Beginner\nBouw een simpele tuin met water en schuilplek.",      ColourYellow, 1);
+        ConfigureButton(easyButton,   "Level 2: Gevorderd\nEen groene tuin, maar kan het nóg beter?",           ColourGreen,  2);
     }
 
     private void ConfigureButton(Button btn, string label, Color colour, int startState)
@@ -117,6 +127,10 @@ public class IntroScreenUI : MonoBehaviour
     {
         gameObject.SetActive(true);
         SetButtonsInteractable(true);
+
+        // Force-set all labels at runtime to override scene-serialized text
+        SetupTexts();
+        SetupButtons();
     }
 
     public void Hide()

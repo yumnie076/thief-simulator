@@ -22,7 +22,7 @@ public class HedgehogPhaseUI : MonoBehaviour
     [SerializeField] private Image safetyIcon;
 
     // ── Timer duration (const so scene-serialized values can never override it) ──
-    private const float totalTime = 60f;
+    private const float totalTime = 30f;
 
     // ── Colours for hunger gradient ─────────────────────────────
     private static readonly Color HungerFull  = new Color32(90, 184, 74, 255);  // green #5ab84a
@@ -70,7 +70,8 @@ public class HedgehogPhaseUI : MonoBehaviour
     private void UpdateTimerDisplay()
     {
         int seconds = Mathf.CeilToInt(timeRemaining);
-        if (timerText != null) timerText.text = $"{seconds}s";
+        float score = ScoreManager.Instance != null ? ScoreManager.Instance.TotalScore : 0f;
+        if (timerText != null) timerText.text = $"{seconds}s\nScore: {score:F0}";
     }
 
     private void OnTimerExpired()

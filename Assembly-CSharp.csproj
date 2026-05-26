@@ -85,6 +85,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeB.cs" />
     <Compile Include="Assets\Scripts\UI\EducationPopup.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexJitter.cs" />
+    <Compile Include="Assets\Scripts\Utils\SimpleParticle.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_UiFrameRateCounter.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexZoom.cs" />
     <Compile Include="Assets\Scripts\Garden\BeeAI.cs" />
@@ -112,6 +113,7 @@
     <Compile Include="Assets\Scripts\UI\ResultScreenUI.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\DropdownSample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexColorCycler.cs" />
+    <Compile Include="Assets\Scripts\Garden\GardenAnimator.cs" />
     <Compile Include="Assets\Scripts\Game\EducationContent.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ObjectSpin.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_PhoneNumberValidator.cs" />
@@ -122,6 +124,7 @@
     <Compile Include="Assets\Scripts\Garden\Insect.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TextMeshProFloatingText.cs" />
     <Compile Include="Assets\Scripts\UI\BuildPhaseUI.cs" />
+    <Compile Include="Assets\Scripts\Hedgehog\FriendHedgehog.cs" />
     <Compile Include="Assets\Scripts\Garden\Collectible.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -5,6 +5,7 @@ using UnityEngine;
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(BoxCollider2D))]
+[ExecuteAlways]
 public class GardenObject : MonoBehaviour
 {
     public enum ObjectType
@@ -16,7 +17,8 @@ public class GardenObject : MonoBehaviour
         Pond,
         LeafPile,
         HedgehogHouse,
-        Trash
+        Trash,
+        Sunflower
     }
 
     [SerializeField] private ObjectType _type;
@@ -31,6 +33,15 @@ public class GardenObject : MonoBehaviour
     }
 
     private SpriteRenderer _sr;
+
+    private void OnValidate()
+    {
+        if (!Application.isPlaying)
+        {
+            _sr = GetComponent<SpriteRenderer>();
+            ApplyVisuals();
+        }
+    }
 
     private void Awake()
     {
@@ -57,6 +68,62 @@ public class GardenObject : MonoBehaviour
         // Adjust collider size based on type
         if (Type == ObjectType.Tree) col.size = new Vector2(0.5f, 0.5f);
         else col.size = new Vector2(0.8f, 0.8f);
+
+        // Pop-in animation
+        StartCoroutine(PopInAnimation(newType));
+    }
+
+    private System.Collections.IEnumerator PopInAnimation(ObjectType newType)
+    {
+        Vector3 targetScale = transform.localScale;
+        transform.localScale = Vector3.zero;
+
+        float duration = 0.3f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            // Overshoot bounce: goes to 1.15x then settles to 1.0x
+            float curve = t < 0.6f
+                ? Mathf.Lerp(0f, 1.15f, t / 0.6f)
+                : Mathf.Lerp(1.15f, 1f, (t - 0.6f) / 0.4f);
+            transform.localScale = targetScale * curve;
+            yield return null;
+        }
+
+        transform.localScale = targetScale;
+        
+        // Attach idle animation AFTER the object has finished popping in
+        AttachAnimator(newType);
+    }
+
+    private void AttachAnimator(ObjectType type)
+    {
+        GardenAnimator.AnimType animType = GardenAnimator.AnimType.None;
+
+        switch (type)
+        {
+            case ObjectType.Flower:
+                animType = GardenAnimator.AnimType.Sway;
+                break;
+            case ObjectType.Tree:
+                animType = GardenAnimator.AnimType.Wobble;
+                break;
+            case ObjectType.LeafPile:
+                animType = GardenAnimator.AnimType.Breathe;
+                break;
+            case ObjectType.Pond:
+                animType = GardenAnimator.AnimType.Wave;
+                break;
+        }
+
+        if (animType != GardenAnimator.AnimType.None)
+        {
+            var anim = gameObject.AddComponent<GardenAnimator>();
+            anim.Setup(animType);
+        }
     }
 
     private void ApplyVisuals()

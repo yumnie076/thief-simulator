@@ -102,11 +102,22 @@ public class FoxAI : MonoBehaviour
         if (waitTime > 0)
         {
             waitTime -= Time.deltaTime;
+            // Idle: settle rotation
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.identity, Time.deltaTime * 8f);
+            sr.color = Color.Lerp(sr.color, Color.white, Time.deltaTime * 5f);
             return;
         }
 
         transform.position = Vector3.MoveTowards(transform.position, targetPos, wanderSpeed * Time.deltaTime);
         FlipSprite(targetPos.x);
+
+        // Walking sway
+        float sway = Mathf.Sin(Time.time * 8f) * 5f;
+        transform.rotation = Quaternion.Euler(0, 0, sway);
+        sr.color = Color.Lerp(sr.color, Color.white, Time.deltaTime * 5f);
+
+        // Depth sorting
+        sr.sortingOrder = Mathf.RoundToInt(-transform.position.y * 10f) + 51;
 
         if (Vector3.Distance(transform.position, targetPos) < 0.2f)
         {
@@ -115,11 +126,26 @@ public class FoxAI : MonoBehaviour
         }
     }
 
+    private bool hasCaught = false;
+
     private void DoChase(float distToHedgehog)
     {
+        if (hasCaught) return;
+
         targetPos = hedgehog.position;
         transform.position = Vector3.MoveTowards(transform.position, targetPos, chaseSpeed * Time.deltaTime);
         FlipSprite(targetPos.x);
+
+        // Aggressive chase sway (faster, wider)
+        float sway = Mathf.Sin(Time.time * 16f) * 10f;
+        transform.rotation = Quaternion.Euler(0, 0, sway);
+
+        // Red tint flash during chase
+        float flash = Mathf.Sin(Time.time * 6f) * 0.5f + 0.5f;
+        sr.color = Color.Lerp(Color.white, new Color(1f, 0.5f, 0.4f), flash * 0.4f);
+
+        // Depth sorting
+        sr.sortingOrder = Mathf.RoundToInt(-transform.position.y * 10f) + 51;
 
         // Check if caught the hedgehog
         if (distToHedgehog < 0.45f)
@@ -127,6 +153,7 @@ public class FoxAI : MonoBehaviour
             var hAI = hedgehog.GetComponent<HedgehogAI>();
             if (hAI != null)
             {
+                hasCaught = true;
                 hAI.GetCaughtByFox();
             }
         }

@@ -26,6 +26,10 @@ public class GardenManager : MonoBehaviour
     public float GardenWidth = 12f;
     public float GardenHeight = 12f;
 
+    [Header("Custom Map Setup")]
+    [Tooltip("Vink dit aan als je zelf de map hebt gebouwd in de Scene View. Er spawnen dan geen willekeurige objecten.")]
+    public bool useCustomMap = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -58,6 +62,21 @@ public class GardenManager : MonoBehaviour
 
     public void InitializeGarden()
     {
+        if (useCustomMap)
+        {
+            // Register all manually placed objects
+            placedObjects.Clear();
+            var allObjs = FindObjectsByType<GardenObject>(FindObjectsSortMode.None);
+            foreach (var obj in allObjs)
+            {
+                placedObjects.Add(obj);
+            }
+            SpawnPlayer();
+            var uic = FindAnyObjectByType<BuildPhaseUI>();
+            if (uic != null) uic.UpdateActions(actionsRemaining);
+            return;
+        }
+
         int state = 1; // default Medium
         if (GameManager.Instance != null)
         {
@@ -100,6 +119,12 @@ public class GardenManager : MonoBehaviour
         if (ui != null) ui.UpdateActions(actionsRemaining);
     }
 
+    [ContextMenu("🔨 Genereer Achtergrond (Editor)")]
+    public void EditorGenerateGrid()
+    {
+        GenerateBackgroundGrid(1); // 1 is medium mix
+    }
+
     private void GenerateBackgroundGrid(int state)
     {
         // Destroy bootstrapper's fallback background
@@ -124,30 +149,231 @@ public class GardenManager : MonoBehaviour
                 tile.transform.SetParent(gridParent.transform);
                 tile.transform.position = new Vector3(x + 0.5f, y + 0.5f, 0);
                 var sr = tile.AddComponent<SpriteRenderer>();
-                sr.sortingOrder = -1000; // Force strictly behind ALL objects (GardenObject can be down to -200)
+                sr.sortingOrder = -1000;
 
-                if (state == 0) // Hard: 90% paved, 10% grass
-                {
-                    sr.sprite = Random.value < 0.9f ? pavedSprite : grassSprite;
-                }
-                else if (state == 1) // Medium: 50% paved, 50% grass
-                {
-                    sr.sprite = Random.value < 0.5f ? pavedSprite : grassSprite;
-                }
-                else // Easy: 10% paved, 90% grass
-                {
-                    sr.sprite = Random.value < 0.1f ? pavedSprite : grassSprite;
-                }
+                bool isPaved;
+                if (state == 0) isPaved = Random.value < 0.9f;
+                else if (state == 1) isPaved = Random.value < 0.5f;
+                else isPaved = Random.value < 0.1f;
+
+                sr.sprite = isPaved ? pavedSprite : grassSprite;
                 
-                // Fix overlap: force scale to exactly 1x1 unit in the world
+                // Fix overlap: force scale to exactly 1x1 unit
                 if (sr.sprite != null && sr.sprite.bounds.size.x > 0)
                 {
                     float scaleX = 1f / sr.sprite.bounds.size.x;
                     float scaleY = 1f / sr.sprite.bounds.size.y;
                     tile.transform.localScale = new Vector3(scaleX, scaleY, 1f);
                 }
+
+                // Add subtle color variation to grass tiles
+                if (!isPaved)
+                {
+                    float variation = Random.Range(-0.08f, 0.08f);
+                    sr.color = new Color(0.85f + variation, 1f + variation * 0.5f, 0.8f + variation);
+
+                    // Randomly spawn tiny decorative daisies on some grass tiles
+                    if (Random.value < 0.15f)
+                    {
+                        SpawnDaisy(gridParent.transform, x + 0.5f, y + 0.5f);
+                    }
+                }
+                else
+                {
+                    // Slight grey variation on paved
+                    float pv = Random.Range(-0.05f, 0.05f);
+                    sr.color = new Color(0.9f + pv, 0.88f + pv, 0.85f + pv);
+                }
             }
         }
+
+        // Spawn fence border around garden
+        SpawnFence(gridParent.transform);
+
+        // Spawn neighborhood background outside the garden
+        SpawnNeighborhood(gridParent.transform);
+    }
+
+    private void SpawnNeighborhood(Transform parent)
+    {
+        Sprite pavedSprite = Resources.Load<Sprite>("EgelGame/tile_paved");
+        
+        // Boundaries of the neighborhood (15 tiles in each direction around the garden)
+        int minX = -10, maxX = Mathf.CeilToInt(GardenWidth) + 10;
+        int minY = -10, maxY = Mathf.CeilToInt(GardenHeight) + 10;
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int y = minY; y <= maxY; y++)
+            {
+                // Skip if inside the garden
+                if (x >= 0 && x < GardenWidth && y >= 0 && y < GardenHeight) continue;
+
+                GameObject tile = new GameObject($"Neighbourhood_{x}_{y}");
+                tile.transform.SetParent(parent);
+                tile.transform.position = new Vector3(x + 0.5f, y + 0.5f, 0);
+                var sr = tile.AddComponent<SpriteRenderer>();
+                sr.sortingOrder = -1001; // Behind everything
+                sr.sprite = pavedSprite;
+
+                // Make asphalt dark grey
+                float p = Random.Range(-0.02f, 0.02f);
+                sr.color = new Color(0.3f + p, 0.3f + p, 0.3f + p);
+
+                // Fix scale
+                if (sr.sprite != null && sr.sprite.bounds.size.x > 0)
+                {
+                    float scaleX = 1f / sr.sprite.bounds.size.x;
+                    float scaleY = 1f / sr.sprite.bounds.size.y;
+                    tile.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+                }
+
+                // Add random houses outside the immediate sidewalk
+                bool isSidewalk = (x >= -2 && x <= GardenWidth + 1 && y >= -2 && y <= GardenHeight + 1);
+                if (!isSidewalk)
+                {
+                    // Randomly spawn a house block (1 in 30 chance per tile)
+                    if (Random.value < 0.03f)
+                    {
+                        SpawnProceduralHouse(parent, x + 0.5f, y + 0.5f);
+                    }
+                }
+                else
+                {
+                    // Sidewalk color (lighter grey)
+                    sr.color = new Color(0.6f + p, 0.6f + p, 0.6f + p);
+                }
+            }
+        }
+    }
+
+    private void SpawnProceduralHouse(Transform parent, float cx, float cy)
+    {
+        var house = new GameObject("BgHouse");
+        house.transform.SetParent(parent);
+        house.transform.position = new Vector3(cx, cy, 0);
+
+        var sr = house.AddComponent<SpriteRenderer>();
+        sr.sortingOrder = -1000; // Above asphalt
+
+        // Generate simple 16x16 house sprite
+        var tex = new Texture2D(16, 16);
+        tex.filterMode = FilterMode.Point;
+        
+        Color wallColor = Random.value < 0.5f ? new Color(0.6f, 0.2f, 0.15f) : new Color(0.7f, 0.6f, 0.5f); // Brick or beige
+        Color roofColor = new Color(0.2f, 0.2f, 0.2f); // Dark roof
+
+        for (int y = 0; y < 16; y++)
+        {
+            for (int x = 0; x < 16; x++)
+            {
+                if (y > 10)
+                {
+                    // Roof
+                    int roofWidth = 16 - (y - 10) * 2;
+                    int roofStart = (16 - roofWidth) / 2;
+                    if (x >= roofStart && x < roofStart + roofWidth) tex.SetPixel(x, y, roofColor);
+                    else tex.SetPixel(x, y, Color.clear);
+                }
+                else
+                {
+                    // Walls
+                    if (x > 1 && x < 14) tex.SetPixel(x, y, wallColor);
+                    else tex.SetPixel(x, y, Color.clear);
+                }
+            }
+        }
+
+        tex.Apply();
+        sr.sprite = Sprite.Create(tex, new Rect(0, 0, 16, 16), new Vector2(0.5f, 0.5f), 16f);
+        house.transform.localScale = new Vector3(2f, 2f, 1f); // Make houses large
+    }
+
+    private void SpawnDaisy(Transform parent, float cx, float cy)
+    {
+        var daisy = new GameObject("Daisy");
+        daisy.transform.SetParent(parent);
+        float ox = Random.Range(-0.3f, 0.3f);
+        float oy = Random.Range(-0.3f, 0.3f);
+        daisy.transform.position = new Vector3(cx + ox, cy + oy, 0);
+
+        var sr = daisy.AddComponent<SpriteRenderer>();
+        sr.sortingOrder = -999; // Just above grass, below everything else
+
+        // Generate tiny 6x6 daisy sprite
+        var tex = new Texture2D(6, 6);
+        tex.filterMode = FilterMode.Point;
+        for (int y = 0; y < 6; y++)
+            for (int x = 0; x < 6; x++)
+                tex.SetPixel(x, y, Color.clear);
+
+        Color petal = Random.value < 0.5f ? Color.white : new Color(1f, 0.95f, 0.5f);
+        Color center = new Color(1f, 0.85f, 0.2f);
+
+        // Simple cross/star shape
+        tex.SetPixel(3, 5, petal); tex.SetPixel(3, 4, petal); // top
+        tex.SetPixel(3, 0, petal); tex.SetPixel(3, 1, petal); // bottom
+        tex.SetPixel(0, 3, petal); tex.SetPixel(1, 3, petal); // left
+        tex.SetPixel(5, 3, petal); tex.SetPixel(4, 3, petal); // right
+        tex.SetPixel(3, 3, center); tex.SetPixel(2, 3, center);
+        tex.SetPixel(3, 2, center); tex.SetPixel(2, 2, center);
+
+        tex.Apply();
+        sr.sprite = Sprite.Create(tex, new Rect(0, 0, 6, 6), new Vector2(0.5f, 0.5f), 16f);
+        daisy.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+
+        // Add tiny sway animation
+        var anim = daisy.AddComponent<GardenAnimator>();
+        anim.Setup(GardenAnimator.AnimType.Sway);
+    }
+
+    private void SpawnFence(Transform parent)
+    {
+        Color fenceColor = new Color(0.45f, 0.28f, 0.12f); // Warm wood brown
+        Color fenceDark = new Color(0.3f, 0.18f, 0.08f);
+
+        // Create fence post sprite (reusable)
+        var fenceTex = new Texture2D(4, 16);
+        fenceTex.filterMode = FilterMode.Point;
+        for (int y = 0; y < 16; y++)
+            for (int x = 0; x < 4; x++)
+                fenceTex.SetPixel(x, y, x == 0 || x == 3 ? fenceDark : fenceColor);
+        fenceTex.Apply();
+        Sprite fenceSprite = Sprite.Create(fenceTex, new Rect(0, 0, 4, 16), new Vector2(0.5f, 0.5f), 16f);
+
+        // Horizontal rail sprite
+        var railTex = new Texture2D(16, 3);
+        railTex.filterMode = FilterMode.Point;
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 16; x++)
+                railTex.SetPixel(x, y, y == 0 ? fenceDark : fenceColor);
+        railTex.Apply();
+        Sprite railSprite = Sprite.Create(railTex, new Rect(0, 0, 16, 3), new Vector2(0.5f, 0.5f), 16f);
+
+        // Bottom and top fence rails
+        for (float x = 0; x < GardenWidth; x += 1f)
+        {
+            CreateFencePiece(parent, railSprite, x + 0.5f, -0.1f, fenceColor);
+            CreateFencePiece(parent, railSprite, x + 0.5f, GardenHeight + 0.1f, fenceColor);
+        }
+
+        // Left and right fence posts
+        for (float y = 0; y < GardenHeight; y += 1f)
+        {
+            CreateFencePiece(parent, fenceSprite, -0.1f, y + 0.5f, fenceColor);
+            CreateFencePiece(parent, fenceSprite, GardenWidth + 0.1f, y + 0.5f, fenceColor);
+        }
+    }
+
+    private void CreateFencePiece(Transform parent, Sprite sprite, float x, float y, Color tint)
+    {
+        var go = new GameObject("Fence");
+        go.transform.SetParent(parent);
+        go.transform.position = new Vector3(x, y, 0);
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.color = tint;
+        sr.sortingOrder = -998; // Above grass, below garden objects
     }
 
     private void SpawnRandomObject(GardenObject.ObjectType type)
@@ -218,6 +444,13 @@ public class GardenManager : MonoBehaviour
 
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPlop();
 
+        // Visual juice
+        if (objType == GardenObject.ObjectType.Tree || objType == GardenObject.ObjectType.Bush)
+            SimpleParticle.SpawnLeaves(position, 6);
+        else if (objType == GardenObject.ObjectType.Flower || objType == GardenObject.ObjectType.Sunflower)
+            SimpleParticle.SpawnSparkles(position, 5);
+        else if (objType == GardenObject.ObjectType.Pond)
+            SimpleParticle.SpawnSplash(position, 6);
         // Show education popup
         string factKey = GetFactKey(selectedTool);
         if (factKey != null && EducationPopup.Instance != null)

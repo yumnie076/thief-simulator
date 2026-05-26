@@ -61,14 +61,29 @@ public class PhaseController : MonoBehaviour
     public void SetGardenStartState(int state)
     {
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.GardenStartState = Mathf.Clamp(state, 0, 2);
+
+            // Store the level goal text for display during build phase
+            switch (state)
+            {
+                case 0: GameManager.Instance.LevelGoalText = "Verwijder al het afval en plaats minimaal 1 vijver"; break;
+                case 1: GameManager.Instance.LevelGoalText = "Bouw een tuin met water, schuilplek en bloemen"; break;
+                case 2: GameManager.Instance.LevelGoalText = "Maximaliseer de biodiversiteit!"; break;
+            }
+        }
     }
+
+    private bool isTransitioning = false;
 
     /// <summary>
     /// Transition to a new phase with a fade effect.
     /// </summary>
     public void StartPhase(GamePhase phase)
     {
+        if (isTransitioning || CurrentPhase == phase) return;
+        isTransitioning = true;
+
         StartCoroutine(FadeTransition(() =>
         {
             CurrentPhase = phase;
@@ -81,6 +96,16 @@ public class PhaseController : MonoBehaviour
 
     private void HandlePhaseEntry(GamePhase phase)
     {
+        // Handle Audio
+        if (AudioManager.Instance != null)
+        {
+            if (phase == GamePhase.GardenBuild) AudioManager.Instance.StartDayAmbience();
+            else AudioManager.Instance.StopDayAmbience();
+
+            if (phase == GamePhase.HedgehogVisit) AudioManager.Instance.StartNightAmbience();
+            else AudioManager.Instance.StopNightAmbience();
+        }
+
         switch (phase)
         {
             case GamePhase.Intro:
@@ -116,8 +141,11 @@ public class PhaseController : MonoBehaviour
     private void SpawnHedgehog()
     {
         // Destroy gardener player if any
-        var player = GameObject.Find("Player");
-        if (player != null) UnityEngine.Object.Destroy(player);
+        var players = UnityEngine.Object.FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+        foreach (var p in players)
+        {
+            UnityEngine.Object.Destroy(p.gameObject);
+        }
 
         // Destroy previous hedgehog/fox if any
         var existing = UnityEngine.Object.FindAnyObjectByType<HedgehogAI>();
@@ -184,6 +212,47 @@ public class PhaseController : MonoBehaviour
                 snack.transform.position = new Vector3(rx, ry, 0f);
                 snack.AddComponent<Collectible>();
             }
+
+            // Spawn a friend hedgehog somewhere in the garden
+            var friendGO = new GameObject("FriendHedgehog");
+            var friendSR = friendGO.AddComponent<SpriteRenderer>();
+            friendSR.sortingOrder = 49;
+
+            var friendSprite = Resources.Load<Sprite>("EgelGame/hedgehog");
+            if (friendSprite != null)
+            {
+                friendSR.sprite = friendSprite;
+            }
+            else
+            {
+                // Fallback: small brown circle (same as main hedgehog)
+                var fTex = new Texture2D(16, 16);
+                for (int y = 0; y < 16; y++)
+                    for (int x = 0; x < 16; x++)
+                    {
+                        float dx = x - 7.5f, dy = y - 7.5f;
+                        fTex.SetPixel(x, y, dx * dx + dy * dy <= 49 ?
+                            new Color(0.42f, 0.26f, 0.15f) : Color.clear);
+                    }
+                fTex.Apply();
+                friendSR.sprite = Sprite.Create(fTex, new Rect(0, 0, 16, 16), new Vector2(0.5f, 0.5f), 16f);
+            }
+
+            float fx = UnityEngine.Random.Range(3f, GardenManager.Instance.GardenWidth - 3f);
+            float fy = UnityEngine.Random.Range(3f, GardenManager.Instance.GardenHeight - 3f);
+            friendGO.transform.position = new Vector3(fx, fy, 0f);
+            friendGO.transform.localScale = Vector3.one * 0.7f;
+
+            var friendCol = friendGO.AddComponent<CircleCollider2D>();
+            friendCol.isTrigger = true;
+            friendCol.radius = 0.5f;
+
+            // Rigidbody2D needed for trigger detection
+            var friendRB = friendGO.AddComponent<Rigidbody2D>();
+            friendRB.isKinematic = true;
+            friendRB.gravityScale = 0f;
+
+            friendGO.AddComponent<FriendHedgehog>();
         }
 
         // Night Overlay — subtle blue dusk, not too dark
@@ -266,7 +335,15 @@ public class PhaseController : MonoBehaviour
 
     private void ReloadScene()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        var scene = SceneManager.GetActiveScene();
+#if UNITY_EDITOR
+        if (scene.buildIndex == -1 && !string.IsNullOrEmpty(scene.path))
+        {
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(scene.path, new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
+            return;
+        }
+#endif
+        SceneManager.LoadScene(scene.name);
     }
 
     // ── Fade coroutine ──────────────────────────────────────────
@@ -312,5 +389,7 @@ public class PhaseController : MonoBehaviour
         }
         fadeOverlay.alpha = 0f;
         fadeOverlay.blocksRaycasts = false;
+        
+        isTransitioning = false;
     }
 }

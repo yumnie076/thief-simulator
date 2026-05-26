@@ -8,6 +8,8 @@ using TMPro;
 /// Wanders around, hunts bugs, and sleeps.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(CircleCollider2D))]
 public class HedgehogAI : MonoBehaviour
 {
     public enum HedgehogState
@@ -32,16 +34,28 @@ public class HedgehogAI : MonoBehaviour
     private Insect targetInsect;
     private Vector3 targetPos;
     private float waitTime;
+    private float drinkCooldown = 0f;
     
     public int bugsEaten = 0;
 
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
-        var col = GetComponent<BoxCollider2D>();
-        if (col == null) col = gameObject.AddComponent<BoxCollider2D>();
-        col.isTrigger = true;
-        col.size = new Vector2(0.8f, 0.8f);
+        
+        // Setup rigidbody for trigger collisions
+        var rb = GetComponent<Rigidbody2D>();
+        rb.isKinematic = true;
+        rb.gravityScale = 0f;
+
+        // Setup collider
+        var circleCol = GetComponent<CircleCollider2D>();
+        circleCol.isTrigger = false; // Hedgehog can be solid or trigger, but Collectible is a trigger
+        circleCol.radius = 0.4f;
+
+        needs = gameObject.AddComponent<HedgehogNeeds>();
+        
+        // Find header
+        var hud = GameObject.Find("HedgehogHUD");
     }
 
     private void Start()
@@ -113,12 +127,17 @@ public class HedgehogAI : MonoBehaviour
             if (moveX < 0) sr.flipX = true;
             else if (moveX > 0) sr.flipX = false;
 
+            // Walking wobble animation
+            float wobble = Mathf.Sin(Time.time * 12f) * 8f;
+            transform.rotation = Quaternion.Euler(0, 0, wobble);
+
             targetPos = transform.position;
             waitTime = 0f;
         }
         else
         {
-            // Reset waitTime if standing still to prevent instant dash when starting to walk
+            // Settle rotation back to normal when standing still
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.identity, Time.deltaTime * 10f);
             waitTime = 0f;
             targetPos = transform.position;
         }
@@ -127,6 +146,9 @@ public class HedgehogAI : MonoBehaviour
         EatNearbyInsects();
         DrinkFromPonds();
 
+        // Tick drink cooldown
+        if (drinkCooldown > 0f) drinkCooldown -= Time.deltaTime;
+
         // 4. House and predator interaction
         var nearbyHouse = GetNearbyHouse();
         var fox = FindAnyObjectByType<FoxAI>();
@@ -134,13 +156,11 @@ public class HedgehogAI : MonoBehaviour
 
         if (foxChasing)
         {
-            needs.Safety -= 25f * Time.deltaTime; // safety decays while hunted
             var hPhaseUI = FindAnyObjectByType<HedgehogPhaseUI>();
             if (hPhaseUI != null) hPhaseUI.SetSafety(false);
         }
         else
         {
-            needs.Safety += 8f * Time.deltaTime; // slowly recover safety
             var hPhaseUI = FindAnyObjectByType<HedgehogPhaseUI>();
             if (hPhaseUI != null) hPhaseUI.SetSafety(true);
         }
@@ -169,12 +189,6 @@ public class HedgehogAI : MonoBehaviour
             transform.position = housePos;
         }
 
-        // Lose condition
-        if (needs.Safety <= 0.01f)
-        {
-            GetFrightenedAndFlee();
-        }
-
         // Depth sorting
         sr.sortingOrder = Mathf.RoundToInt(-transform.position.y * 10f);
     }
@@ -188,8 +202,40 @@ public class HedgehogAI : MonoBehaviour
             if (AudioManager.Instance != null) AudioManager.Instance.PlayBite();
             Destroy(other.gameObject);
             Debug.Log("[HedgehogAI] Ate a snack! +20 Hunger");
+
+            // Eat pulse animation
+            StartCoroutine(EatPulse());
             return;
         }
+
+        // Friend hedgehog discovery
+        var friend = other.GetComponent<FriendHedgehog>();
+        if (friend != null && !friend.found)
+        {
+            friend.found = true;
+            SimpleParticle.SpawnHearts(transform.position, 5);
+            ScoreManager.Instance?.AddFood(50f);
+            AudioManager.Instance?.PlayBite();
+            if (headerText != null)
+                headerText.text = "Je hebt een egelvriendje gevonden! +50 punten!";
+            Destroy(friend.gameObject, 2f);
+        }
+    }
+
+    private System.Collections.IEnumerator EatPulse()
+    {
+        Vector3 orig = transform.localScale;
+        float duration = 0.2f;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float s = 1f + Mathf.Sin(t * Mathf.PI) * 0.25f; // Pulse up to 1.25x then back
+            transform.localScale = orig * s;
+            yield return null;
+        }
+        transform.localScale = orig;
     }
 
     private void DoWander()
@@ -245,6 +291,7 @@ public class HedgehogAI : MonoBehaviour
                 
                 if (needs != null) needs.Feed(30f);
                 if (ScoreManager.Instance != null) ScoreManager.Instance.AddFood(15f);
+                SimpleParticle.SpawnHearts(transform.position, 2);
 
                 targetInsect = null;
                 currentState = HedgehogState.Wander;
@@ -265,6 +312,14 @@ public class HedgehogAI : MonoBehaviour
                     if (needs != null) needs.Drink(10f * Time.deltaTime);
                     if (ScoreManager.Instance != null && ScoreManager.Instance.WaterScore < 30f)
                         ScoreManager.Instance.AddWater(5f * Time.deltaTime);
+
+                    // Visual + audio feedback on cooldown
+                    if (drinkCooldown <= 0f)
+                    {
+                        SimpleParticle.SpawnSplash(transform.position);
+                        AudioManager.Instance?.PlaySplash();
+                        drinkCooldown = 2f;
+                    }
                 }
             }
         }
@@ -288,20 +343,7 @@ public class HedgehogAI : MonoBehaviour
 
     public void GetCaughtByFox()
     {
-        if (needs != null) needs.Safety -= 35f;
-
-        // Push away
-        var fox = FindAnyObjectByType<FoxAI>();
-        if (fox != null)
-        {
-            Vector3 pushDir = (transform.position - fox.transform.position).normalized;
-            transform.position += pushDir * 1.5f;
-        }
-    }
-
-    private void GetFrightenedAndFlee()
-    {
-        Debug.Log("[HedgehogAI] Safety hit 0! Hedgehog fled from the fox.");
+        Debug.Log("[HedgehogAI] Fled from fox!");
         PhaseController.Instance?.StartPhase(PhaseController.GamePhase.Result);
     }
 

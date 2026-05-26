@@ -14,7 +14,8 @@ public static class PlaceableTool
         Tree,
         Pond,
         LeafPile,
-        HedgehogHouse
+        HedgehogHouse,
+        Sunflower
     }
 
     /// <summary>Returns the action-point cost for a given tool.</summary>
