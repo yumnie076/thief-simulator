@@ -17,7 +17,7 @@ public class HedgehogNeeds : MonoBehaviour
     [SerializeField] private float _safety = 100f;
 
     /// <summary>Rate at which hunger decreases per second.</summary>
-    private const float HungerDecayRate = 1.2f;
+    private const float HungerDecayRate = 3.5f;
 
     public float Hunger
     {

@@ -56,6 +56,13 @@ public class HedgehogPhaseUI : MonoBehaviour
         if (!isRunning) return;
 
         timeRemaining -= Time.deltaTime;
+        
+        if (timeRemaining <= 15f && PhaseController.Instance != null && !PhaseController.Instance.IsRaining)
+        {
+            PhaseController.Instance.StartRain();
+            if (headerText != null) headerText.text = "Het regent! Tegels veranderen in modderplassen...";
+        }
+
         if (timeRemaining <= 0f)
         {
             timeRemaining = 0f;
@@ -90,8 +97,29 @@ public class HedgehogPhaseUI : MonoBehaviour
         normalized01 = Mathf.Clamp01(normalized01);
         if (hungerBarFill != null)
         {
-            hungerBarFill.fillAmount = normalized01;
+            // Scale the bar physically on the X axis to guarantee it shrinks!
+            hungerBarFill.rectTransform.localScale = new Vector3(normalized01, 1f, 1f);
             hungerBarFill.color = Color.Lerp(HungerEmpty, HungerFull, normalized01);
+        }
+
+        if (headerText != null)
+        {
+            bool isRaining = PhaseController.Instance != null && PhaseController.Instance.IsRaining;
+            
+            if (normalized01 < 0.25f)
+            {
+                headerText.text = "WAARSCHUWING: Je verhongert bijna!";
+                headerText.color = Color.red;
+            }
+            else if (!isRaining)
+            {
+                headerText.text = "De egel zoekt voedsel en schuilplek...";
+                headerText.color = Color.white;
+            }
+            else
+            {
+                headerText.color = Color.cyan; // Rain mode text color
+            }
         }
     }
 

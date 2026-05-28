@@ -71,8 +71,8 @@ public class IntroScreenUI : MonoBehaviour
     private void SetupButtons()
     {
         ConfigureButton(hardButton,   "Level 3: Expert\nEen versteende tuin vol afval. Maak het leefbaar!",       ColourRed,    0);
-        ConfigureButton(mediumButton, "Level 1: Beginner\nBouw een simpele tuin met water en schuilplek.",      ColourYellow, 1);
-        ConfigureButton(easyButton,   "Level 2: Gevorderd\nEen groene tuin, maar kan het nóg beter?",           ColourGreen,  2);
+        ConfigureButton(mediumButton, "Level 2: Gevorderd\nBouw een simpele tuin met water en schuilplek.",     ColourYellow, 1);
+        ConfigureButton(easyButton,   "Level 1: Beginner\nEen groene tuin, maar kan het nog beter?",            ColourGreen,  2);
     }
 
     private void ConfigureButton(Button btn, string label, Color colour, int startState)
@@ -87,22 +87,29 @@ public class IntroScreenUI : MonoBehaviour
         Image img = btn.GetComponent<Image>();
         if (img != null) img.color = colour;
 
-        // Click handler
-        btn.onClick.AddListener(() => OnDifficultySelected(startState));
+        // Click handler - clear old ones first to prevent WebGL ghosting
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(() => OnDifficultySelected(btn, startState));
 
         // Hover scale effect via EventTrigger
         AddHoverEffect(btn.gameObject);
     }
 
-    private void OnDifficultySelected(int startState)
+    private void OnDifficultySelected(Button clickedBtn, int startState)
     {
         if (PhaseController.Instance == null) return;
+        
+        // Force text change so player SEES the click registered
+        TMP_Text txt = clickedBtn.GetComponentInChildren<TMP_Text>();
+        if (txt != null) txt.text = "Aan het laden...";
 
         // Disable buttons to prevent double-fire
         SetButtonsInteractable(false);
 
         PhaseController.Instance.SetGardenStartState(startState);
-        PhaseController.Instance.StartPhase(PhaseController.GamePhase.GardenBuild);
+        
+        // Force the transition even if PhaseController thinks it's already transitioning
+        PhaseController.Instance.StartPhase(PhaseController.GamePhase.GardenBuild, true);
     }
 
     // ── Hover effect ────────────────────────────────────────────

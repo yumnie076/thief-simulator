@@ -23,6 +23,8 @@ public class HedgehogAI : MonoBehaviour
     [Header("Runtime State")]
     public HedgehogState currentState = HedgehogState.Wander;
     public float moveSpeed = 3.5f; // Slightly faster for fun playable controls
+    private float baseMoveSpeed = 3.5f;
+    private int puddlesIn = 0;
 
     [Header("Playable State")]
     public bool isHidden = false;
@@ -60,6 +62,7 @@ public class HedgehogAI : MonoBehaviour
 
     private void Start()
     {
+        baseMoveSpeed = moveSpeed;
         needs = gameObject.GetComponent<HedgehogNeeds>();
         if (needs == null) needs = gameObject.AddComponent<HedgehogNeeds>();
 
@@ -82,6 +85,15 @@ public class HedgehogAI : MonoBehaviour
     private void Update()
     {
         if (needs == null) needs = GetComponent<HedgehogNeeds>();
+
+        if (needs != null && needs.Hunger <= 0)
+        {
+            PhaseController.Instance?.EndGameEarly("verhongerd");
+            return;
+        }
+
+        // Handle speed penalties
+        moveSpeed = (puddlesIn > 0) ? baseMoveSpeed * 0.4f : baseMoveSpeed;
 
         // 1. Handle hidden state
         if (isHidden)
@@ -195,6 +207,24 @@ public class HedgehogAI : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (other.name.Contains("RainPuddle"))
+        {
+            puddlesIn++;
+            // We don't return here just in case, though puddles have nothing else
+        }
+
+        if (!isHidden && other.GetComponent<RobotMowerAI>() != null)
+        {
+            PhaseController.Instance?.EndGameEarly("overreden door de robotmaaier");
+            return;
+        }
+
+        if (!isHidden && other.GetComponent<FoxAI>() != null)
+        {
+            PhaseController.Instance?.EndGameEarly("gepakt door de vos");
+            return;
+        }
+
         var collectible = other.GetComponent<Collectible>();
         if (collectible != null)
         {
@@ -202,6 +232,7 @@ public class HedgehogAI : MonoBehaviour
             if (AudioManager.Instance != null) AudioManager.Instance.PlayBite();
             Destroy(other.gameObject);
             Debug.Log("[HedgehogAI] Ate a snack! +20 Hunger");
+            if (ScoreManager.Instance != null) ScoreManager.Instance.AddFood(15f);
 
             // Eat pulse animation
             StartCoroutine(EatPulse());
@@ -365,6 +396,15 @@ public class HedgehogAI : MonoBehaviour
                 bestDist = dist;
                 targetInsect = insect;
             }
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.name.Contains("RainPuddle"))
+        {
+            puddlesIn--;
+            if (puddlesIn < 0) puddlesIn = 0;
         }
     }
 

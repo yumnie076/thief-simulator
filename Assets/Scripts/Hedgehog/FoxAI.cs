@@ -27,6 +27,22 @@ public class FoxAI : MonoBehaviour
         FindHedgehog();
         PickRandomWanderTarget();
         waitTime = 6f; // Delay initial movement so player has time to orient
+
+        if (GameManager.Instance != null)
+        {
+            int state = GameManager.Instance.GardenStartState;
+            if (state == 1) // Medium (Level 2)
+            {
+                wanderSpeed *= 1.3f;
+                chaseSpeed *= 1.4f;
+            }
+            else if (state == 0) // Hard (Level 3)
+            {
+                wanderSpeed *= 1.8f;
+                chaseSpeed *= 1.8f;
+                detectionRange = 7f; // Also sees you from further away
+            }
+        }
     }
 
     private void Update()

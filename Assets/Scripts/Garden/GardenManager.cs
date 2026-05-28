@@ -83,28 +83,35 @@ public class GardenManager : MonoBehaviour
             state = GameManager.Instance.GardenStartState;
         }
 
-        if (state == 0) // Hard
+        // Clean up any previously spawned objects for Replay functionality
+        foreach (var obj in placedObjects)
+        {
+            if (obj != null) Destroy(obj.gameObject);
+        }
+        placedObjects.Clear();
+        
+        if (state == 0) // Hard (Level 3)
         {
             GardenWidth = 14f;
             GardenHeight = 14f;
-            actionsRemaining = 12;
+            actionsRemaining = 18; // More actions needed because of all the trash
             for (int i=0; i<1; i++) SpawnRandomObject(GardenObject.ObjectType.Bush);
             for (int i=0; i<5; i++) SpawnRandomObject(GardenObject.ObjectType.Trash); // Veel afval op hard
         }
-        else if (state == 1) // Medium
+        else if (state == 1) // Medium (Level 2)
         {
             GardenWidth = 18f;
             GardenHeight = 18f;
-            actionsRemaining = 18;
+            actionsRemaining = 12; // Moderate budget
             for (int i=0; i<3; i++) SpawnRandomObject(GardenObject.ObjectType.Bush);
             for (int i=0; i<2; i++) SpawnRandomObject(GardenObject.ObjectType.Flower);
             for (int i=0; i<3; i++) SpawnRandomObject(GardenObject.ObjectType.Trash);
         }
-        else if (state == 2) // Easy
+        else if (state == 2) // Easy (Level 1)
         {
             GardenWidth = 24f;
             GardenHeight = 24f;
-            actionsRemaining = 25;
+            actionsRemaining = 6; // Very tight budget, but empty clean garden
             for (int i=0; i<5; i++) SpawnRandomObject(GardenObject.ObjectType.Bush);
             for (int i=0; i<5; i++) SpawnRandomObject(GardenObject.ObjectType.Flower);
             for (int i=0; i<1; i++) SpawnRandomObject(GardenObject.ObjectType.Tree);
@@ -520,6 +527,7 @@ public class GardenManager : MonoBehaviour
             case PlaceableTool.ToolType.Pond: return GardenObject.ObjectType.Pond;
             case PlaceableTool.ToolType.LeafPile: return GardenObject.ObjectType.LeafPile;
             case PlaceableTool.ToolType.HedgehogHouse: return GardenObject.ObjectType.HedgehogHouse;
+            case PlaceableTool.ToolType.Sunflower: return GardenObject.ObjectType.Sunflower;
             default: return GardenObject.ObjectType.Paved;
         }
     }

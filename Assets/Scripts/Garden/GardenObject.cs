@@ -69,6 +69,11 @@ public class GardenObject : MonoBehaviour
         if (Type == ObjectType.Tree) col.size = new Vector2(0.5f, 0.5f);
         else col.size = new Vector2(0.8f, 0.8f);
 
+        if (Type == ObjectType.Sunflower)
+        {
+            transform.localScale = new Vector3(1.5f, 1.5f, 1f);
+        }
+
         // Pop-in animation
         StartCoroutine(PopInAnimation(newType));
     }
@@ -188,6 +193,7 @@ public class GardenObject : MonoBehaviour
         {
             case ObjectType.Paved:         spriteName = "tile_paved"; break;
             case ObjectType.Flower:        spriteName = "tile_flower"; break;
+            case ObjectType.Sunflower:     spriteName = "tile_flower"; break; // Re-use flower sprite but scale it
             case ObjectType.Bush:          spriteName = "tile_bush"; break;
             case ObjectType.Tree:          spriteName = "tile_tree"; break;
             case ObjectType.Pond:          spriteName = "tile_water"; break;

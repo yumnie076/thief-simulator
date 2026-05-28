@@ -48,7 +48,8 @@ public class BuildPhaseUI : MonoBehaviour
 
     // ── State ───────────────────────────────────────────────────
     private int selectedToolIndex = -1;
-    private int remainingActions = 0;
+    private int remainingActions = 10;
+    private int initialActions = -1; // Added for play button lock
 
     // ── Lifecycle ───────────────────────────────────────────────
     private void Start()
@@ -142,6 +143,7 @@ public class BuildPhaseUI : MonoBehaviour
             if (label != null) 
             {
                 label.text = ToolLabels[i];
+                label.color = Color.white;
                 // Move text down slightly to make room for icon
                 RectTransform labelRt = label.GetComponent<RectTransform>();
                 if (labelRt != null) labelRt.anchoredPosition = new Vector2(0, -18);
@@ -160,8 +162,12 @@ public class BuildPhaseUI : MonoBehaviour
 
     private void SetupDoneButton()
     {
-        if (doneButtonText != null) doneButtonText.text = "Klaar — Roep de egel!";
-        if (doneButton != null) doneButton.onClick.AddListener(OnDoneClicked);
+        if (doneButtonText != null) doneButtonText.text = "Besteed nog 3 muntjes...";
+        if (doneButton != null) 
+        {
+            doneButton.onClick.AddListener(OnDoneClicked);
+            doneButton.interactable = false;
+        }
     }
 
     private void AppendUnlockableButtons()
@@ -224,12 +230,15 @@ public class BuildPhaseUI : MonoBehaviour
                 {
                     img.color = (i == index) ? AccentColour : new Color(0.95f, 0.95f, 0.95f, 1f);
                 }
+                
+                // Pop the selected button up slightly for obvious feedback
+                toolButtons[i].transform.localScale = (i == index) ? new Vector3(1.15f, 1.15f, 1f) : Vector3.one;
 
                 // Change text color for premium readability
                 var txt = toolButtons[i].GetComponentInChildren<TMP_Text>();
                 if (txt != null)
                 {
-                    txt.color = (i == index) ? Color.white : new Color(0.2f, 0.2f, 0.2f, 1f);
+                    txt.color = Color.white;
                 }
             }
         }
@@ -268,6 +277,8 @@ public class BuildPhaseUI : MonoBehaviour
     /// <summary>Called when an action is used in GardenManager.</summary>
     public void UpdateActions(int remaining)
     {
+        if (initialActions == -1) initialActions = remaining;
+
         remainingActions = remaining;
         if (actionsText != null) actionsText.text = $"Acties: {remaining}";
 
@@ -276,6 +287,20 @@ public class BuildPhaseUI : MonoBehaviour
         foreach (Button btn in toolButtons)
         {
             if (btn != null) btn.interactable = canPlace;
+        }
+
+        // Enable Play button only if at least 3 actions were used
+        if (doneButton != null)
+        {
+            int spent = initialActions - remaining;
+            doneButton.interactable = (spent >= 3);
+            if (doneButtonText != null)
+            {
+                if (doneButton.interactable)
+                    doneButtonText.text = "Klaar — Roep de egel!";
+                else
+                    doneButtonText.text = $"Besteed nog {3 - spent} muntjes...";
+            }
         }
     }
 
@@ -306,6 +331,7 @@ public class BuildPhaseUI : MonoBehaviour
     // ── Show / Hide ─────────────────────────────────────────────
     public void Show()
     {
+        initialActions = -1; // Reset tracking for new rounds
         gameObject.SetActive(true);
         SubscribeGardenEvents();
 

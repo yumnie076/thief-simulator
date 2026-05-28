@@ -17,6 +17,10 @@ public class PhaseController : MonoBehaviour
     // ── State ───────────────────────────────────────────────────
     public GamePhase CurrentPhase { get; private set; } = GamePhase.Intro;
 
+    // Status tracking for win/loss
+    public string GameOverReason { get; private set; } = null;
+    public bool IsRaining { get; private set; } = false;
+
     /// <summary>Fired every time the phase changes.</summary>
     public event Action<GamePhase> OnPhaseChanged;
 
@@ -74,15 +78,15 @@ public class PhaseController : MonoBehaviour
         }
     }
 
-    private bool isTransitioning = false;
+    public bool IsTransitioning { get; private set; } = false;
 
     /// <summary>
     /// Transition to a new phase with a fade effect.
     /// </summary>
-    public void StartPhase(GamePhase phase)
+    public void StartPhase(GamePhase phase, bool force = false)
     {
-        if (isTransitioning || CurrentPhase == phase) return;
-        isTransitioning = true;
+        if ((IsTransitioning && !force) || CurrentPhase == phase) return;
+        IsTransitioning = true;
 
         StartCoroutine(FadeTransition(() =>
         {
@@ -150,9 +154,16 @@ public class PhaseController : MonoBehaviour
         // Destroy previous hedgehog/fox if any
         var existing = UnityEngine.Object.FindAnyObjectByType<HedgehogAI>();
         if (existing != null) UnityEngine.Object.Destroy(existing.gameObject);
-        
+
         var existingFox = UnityEngine.Object.FindAnyObjectByType<FoxAI>();
         if (existingFox != null) UnityEngine.Object.Destroy(existingFox.gameObject);
+        
+        var existingMower = UnityEngine.Object.FindAnyObjectByType<RobotMowerAI>();
+        if (existingMower != null) UnityEngine.Object.Destroy(existingMower.gameObject);
+
+        // Reset win/loss status
+        GameOverReason = null;
+        IsRaining = false;
 
         // Create hedgehog GameObject
         var hedgehogGO = new GameObject("Hedgehog");
@@ -200,6 +211,9 @@ public class PhaseController : MonoBehaviour
 
         // Spawn Fox Predator at top-left edge
         SpawnFox();
+
+        // Spawn Robot Mower at bottom-right edge
+        SpawnMower();
 
         // Spawn snacks around the garden
         if (GardenManager.Instance != null)
@@ -305,6 +319,91 @@ public class PhaseController : MonoBehaviour
         foxGO.AddComponent<FoxAI>();
     }
 
+    private void SpawnMower()
+    {
+        if (GardenManager.Instance == null) return;
+
+        var mowerGO = new GameObject("RobotMower");
+        mowerGO.transform.position = new Vector3(
+            GardenManager.Instance.GardenWidth - 2f,
+            2f, 0f);
+            
+        mowerGO.AddComponent<RobotMowerAI>();
+    }
+
+    public void StartRain()
+    {
+        if (IsRaining || CurrentPhase != GamePhase.HedgehogVisit) return;
+        IsRaining = true;
+
+        Debug.Log("[PhaseController] It started raining! Puddles forming on paved tiles.");
+
+        // Start lightning flash and dim the night overlay
+        var nightGO = GameObject.Find("NightOverlay");
+        if (nightGO != null)
+        {
+            var sr = nightGO.GetComponent<SpriteRenderer>();
+            if (sr != null) StartCoroutine(FlashLightning(sr));
+        }
+
+        // Spawn Puddles on ALL Paved tiles
+        if (GardenManager.Instance != null)
+        {
+            foreach (var obj in GardenManager.Instance.PlacedObjects)
+            {
+                if (obj.Type == GardenObject.ObjectType.Paved)
+                {
+                    SpawnPuddle(obj.transform.position);
+                }
+            }
+        }
+    }
+
+    private void SpawnPuddle(Vector3 pos)
+    {
+        var puddleGO = new GameObject("RainPuddle");
+        puddleGO.transform.position = pos;
+        
+        var sr = puddleGO.AddComponent<SpriteRenderer>();
+        var tex = new Texture2D(16, 16);
+        tex.filterMode = FilterMode.Point;
+        for (int y = 0; y < 16; y++)
+        {
+            for (int x = 0; x < 16; x++)
+            {
+                float dx = (x - 7.5f) / 7f;
+                float dy = (y - 7.5f) / 5f; // Oval shape
+                if (dx * dx + dy * dy <= 1f)
+                    tex.SetPixel(x, y, new Color(0.2f, 0.4f, 0.8f, 0.6f)); // Semi-transparent blue
+                else
+                    tex.SetPixel(x, y, Color.clear);
+            }
+        }
+        tex.Apply();
+        sr.sprite = Sprite.Create(tex, new Rect(0,0,16,16), new Vector2(0.5f,0.5f), 16f);
+        sr.sortingOrder = 1; // Just above the paved tile
+
+        var col = puddleGO.AddComponent<BoxCollider2D>();
+        col.isTrigger = true;
+        col.size = new Vector2(0.8f, 0.8f);
+
+        // We don't need a custom script, HedgehogAI will just look for the "RainPuddle" name
+    }
+
+    private System.Collections.IEnumerator FlashLightning(SpriteRenderer sr)
+    {
+        // First strike
+        sr.color = new Color(1f, 1f, 1f, 0.8f);
+        yield return new WaitForSeconds(0.1f);
+        sr.color = new Color(0.1f, 0.1f, 0.3f, 0.5f);
+        yield return new WaitForSeconds(0.05f);
+        // Second strike
+        sr.color = new Color(0.9f, 0.9f, 1f, 0.6f);
+        yield return new WaitForSeconds(0.1f);
+        // Settle into rain tint
+        sr.color = new Color(0.1f, 0.1f, 0.3f, 0.5f);
+    }
+
     private void CalculateFinalScore()
     {
         // Set biodiversity score from tracker
@@ -320,6 +419,28 @@ public class PhaseController : MonoBehaviour
     // ── Transition helpers ──────────────────────────────────────
 
     /// <summary>
+    /// Ends the hedgehog phase early if the player dies/starves.
+    /// </summary>
+    public void EndGameEarly(string reason)
+    {
+        if (CurrentPhase != GamePhase.HedgehogVisit) return;
+
+        Debug.Log($"[PhaseController] Game Over triggered: {reason}");
+        GameOverReason = reason;
+        
+        // Halve the score as a penalty
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.AddFood(-ScoreManager.Instance.FoodScore * 0.5f);
+            ScoreManager.Instance.AddWater(-ScoreManager.Instance.WaterScore * 0.5f);
+            ScoreManager.Instance.AddShelter(-ScoreManager.Instance.ShelterScore * 0.5f);
+            ScoreManager.Instance.AddBiodiversity(-ScoreManager.Instance.BiodiversityScore * 0.5f);
+        }
+
+        StartPhase(GamePhase.Result);
+    }
+
+    /// <summary>
     /// Convenience method: transition from current phase to the next in sequence.
     /// </summary>
     public void AdvanceToNextPhase()
@@ -329,21 +450,41 @@ public class PhaseController : MonoBehaviour
             case GamePhase.Intro:          StartPhase(GamePhase.GardenBuild);   break;
             case GamePhase.GardenBuild:    StartPhase(GamePhase.HedgehogVisit); break;
             case GamePhase.HedgehogVisit:  StartPhase(GamePhase.Result);        break;
-            case GamePhase.Result:         ReloadScene();                       break;
+            case GamePhase.Result:         ManualRestart();                     break;
         }
     }
 
-    private void ReloadScene()
+    private void ManualRestart()
     {
-        var scene = SceneManager.GetActiveScene();
-#if UNITY_EDITOR
-        if (scene.buildIndex == -1 && !string.IsNullOrEmpty(scene.path))
+        Debug.Log("[PhaseController] Doing a manual replay reset to avoid SceneManager errors.");
+            
+        // Clean up insects and snacks
+        var insects = FindObjectsByType<Insect>(FindObjectsSortMode.None);
+        foreach (var inc in insects) Destroy(inc.gameObject);
+            
+        var snacks = FindObjectsByType<Collectible>(FindObjectsSortMode.None);
+        foreach (var snack in snacks) Destroy(snack.gameObject);
+
+        // Remove the existing hedgehog and fox manually just to be safe
+        var hedgehog = FindAnyObjectByType<HedgehogAI>();
+        if (hedgehog != null) Destroy(hedgehog.gameObject);
+        
+        var fox = FindAnyObjectByType<FoxAI>();
+        if (fox != null) Destroy(fox.gameObject);
+        
+        var gardener = FindAnyObjectByType<PlayerController>();
+        if (gardener != null) Destroy(gardener.gameObject);
+            
+        // Go back to intro
+        StartPhase(GamePhase.Intro);
+            
+        // Re-enable the replay button for future clicks
+        var resultUI = FindAnyObjectByType<ResultScreenUI>();
+        if (resultUI != null)
         {
-            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(scene.path, new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
-            return;
+            var btns = resultUI.GetComponentsInChildren<UnityEngine.UI.Button>();
+            foreach (var btn in btns) btn.interactable = true;
         }
-#endif
-        SceneManager.LoadScene(scene.name);
     }
 
     // ── Fade coroutine ──────────────────────────────────────────
@@ -358,6 +499,7 @@ public class PhaseController : MonoBehaviour
         {
             // No overlay assigned — execute immediately
             onMidpoint?.Invoke();
+            IsTransitioning = false;
             yield break;
         }
 
@@ -390,6 +532,6 @@ public class PhaseController : MonoBehaviour
         fadeOverlay.alpha = 0f;
         fadeOverlay.blocksRaycasts = false;
         
-        isTransitioning = false;
+        IsTransitioning = false;
     }
 }

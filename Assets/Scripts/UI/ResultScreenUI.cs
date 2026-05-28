@@ -73,15 +73,21 @@ public class ResultScreenUI : MonoBehaviour
     /// </summary>
     public void DisplayResults(float biodiversity, float food, float water, float shelter, float total)
     {
-        // ─ Title based on outcome ─
+        // ── Title based on outcome ──
         if (titleText != null)
         {
-            if (total >= ThresholdGreat)
-                titleText.text = "Jouw tuin is een egel-paradijs!";
-            else if (total >= ThresholdPartial)
-                titleText.text = "Een goed begin voor de egel!";
+            if (PhaseController.Instance != null && !string.IsNullOrEmpty(PhaseController.Instance.GameOverReason))
+            {
+                // Game Over
+                titleText.text = $"GAME OVER\n<size=60%>De egel is {PhaseController.Instance.GameOverReason}!</size>";
+                titleText.color = new Color(0.8f, 0.2f, 0.2f); // Red
+            }
             else
-                titleText.text = "De egel had het moeilijk in jouw tuin...";
+            {
+                // Win (survived 30s)
+                titleText.text = "GEWONNEN!\n<size=60%>De egel heeft het overleefd!</size>";
+                titleText.color = new Color(0.35f, 0.72f, 0.29f); // Green
+            }
         }
 
         // ─ Save high score ─
